@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="zh">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>PLM 检出</title>
+		<style>
+			/* 全局样式 */
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f5f5f5;
+				margin: 0;
+				padding: 0;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+			}
+
+			.container {
+				width: 100%;
+				height: 560px;
+				background-color: #fff;
+				padding: 20px;
+				border-radius: 8px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			}
+
+			h1 {
+				text-align: center;
+				margin-bottom: 20px;
+			}
+
+			/* 搜索栏样式 */
+			.search-bar {
+				display: flex;
+				align-items: center;
+				margin: 20px 0;
+			}
+
+			.search-bar input {
+				padding: 8px 12px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				width: 20%;
+			}
+
+			.search-bar select {
+				padding: 8px 12px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				margin-left: 10px;
+				background-color: white;
+			}
+
+			.search-bar select:hover {
+				border-color: #999;
+			}
+
+			.search-bar button {
+				padding: 8px 16px;
+				border: none;
+				border-radius: 4px;
+				background-color: #007bff;
+				color: white;
+				cursor: pointer;
+				margin-left: 10px;
+			}
+
+			.search-bar button:hover {
+				background-color: #0056b3;
+			}
+
+			/* 表格容器样式 */
+			.tables-container {
+				display: flex;
+				gap: 20px;
+				height: 430px;
+			}
+
+			.table-wrapper {
+				flex: 1;
+				border: 1px solid #ddd;
+				border-radius: 8px;
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+				max-height: 430px;
+			}
+
+			.table-wrapper .table-content {
+				flex: 1;
+				overflow-y: auto;
+				max-height: calc(430px - 41px); /* 减去标题高度 */
+			}
+
+			.table-wrapper .table-content::-webkit-scrollbar {
+				width: 8px;
+			}
+
+			.table-wrapper .table-content::-webkit-scrollbar-track {
+				background: #f1f1f1;
+				border-radius: 4px;
+			}
+
+			.table-wrapper .table-content::-webkit-scrollbar-thumb {
+				background: #c1c1c1;
+				border-radius: 4px;
+			}
+
+			.table-wrapper .table-content::-webkit-scrollbar-thumb:hover {
+				background: #a8a8a8;
+			}
+
+			.table-wrapper h2 {
+				margin: 0;
+				padding: 10px;
+				background-color: #f0f0f0;
+				border-bottom: 1px solid #ddd;
+			}
+
+			/* 表格样式 */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				table-layout: auto;
+			}
+
+			table th,
+			table td {
+				padding: 10px;
+				text-align: center;
+				border: 1px solid #ddd;
+				white-space: nowrap;
+				width: auto;
+			}
+
+			/* 选中行样式 */
+			.selected {
+				background-color: #d1e7dd;
+			}
+
+			/* 操作按钮样式 */
+			.left-buttons {
+				display: flex;
+				gap: 10px;
+				margin-top: 10px;
+			}
+
+			.left-buttons button {
+				padding: 8px 16px;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+
+			.left-buttons button[disabled] {
+				background-color: #ccc;
+				color: #666;
+				cursor: not-allowed;
+			}
+
+			.left-buttons button:not([disabled]) {
+				background-color: #007bff;
+				color: white;
+			}
+
+			.left-buttons button:not([disabled]):hover {
+				background-color: #0056b3;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<!-- 搜索栏 -->
+			<div class="search-bar">
+				<input type="text" id="searchInput" placeholder="输入编码" />
+				<select id="typeSelect">
+					<option value="pcb">PCB</option>
+					<option value="orcad">原理图</option>
+				</select>
+				<button id="searchButton">搜索</button>
+			</div>
+
+			<!-- 双表格显示区域 -->
+			<div class="tables-container">
+				<!-- 查询结果表格 -->
+				<div class="table-wrapper left-table">
+					<h2>查询列表</h2>
+					<div class="table-content">
+						<table id="fileTable">
+							<thead>
+								<tr>
+									<th>number</th>
+									<th>name</th>
+									<th>state</th>
+									<th>status</th>
+									<th>version</th>
+									<th>boardNumber</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- 已检出文件表格 -->
+				<div class="table-wrapper right-table">
+					<h2>检出列表</h2>
+					<div class="table-content">
+						<table id="checkoutTable">
+							<thead>
+								<tr>
+									<th>number</th>
+									<th>name</th>
+									<th>state</th>
+									<th>status</th>
+									<th>version</th>
+									<th>boardNumber</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- 操作按钮 -->
+			<div class="left-buttons">
+				<button id="viewButton" disabled>查看</button>
+				<button id="editButton" disabled>编辑</button>
+			</div>
+		</div>
+
+		<script>
+			// 全局变量
+			let fileData = [];
+			let fileTableBody = document.querySelector('#fileTable tbody');
+			let checkoutTableBody = document.querySelector('#checkoutTable tbody');
+			let selectedRow = null;
+
+			// PLM相关变量（预留）
+			let teamName, teamUUid, folders, folderUUid, folderInfo, fileDia;
+
+			// 生成时间戳
+			const timestamp = formatDate(new Date());
+			console.log(`当前时间戳：${timestamp}`);
+
+			// 页面加载完成后初始化
+			window.onload = function () {
+				loadMockData();
+			};
+
+			/**
+			 * 加载模拟数据
+			 */
+			function loadMockData() {
+				fileData = [
+					{ number: 'DEMO-001', name: '示例PCB项目', state: '已发布', status: '检入', version: 'V1.0', boardNumber: 'PCB-001' },
+					{ number: 'DEMO-002', name: '示例原理图项目', state: '设计中', status: '检入', version: 'V1.2', boardNumber: 'SCH-001' },
+					{ number: 'DEMO-003', name: '测试项目A', state: '已发布', status: '检出', version: 'V2.0', boardNumber: 'PCB-002' },
+					{ number: 'DEMO-004', name: '测试项目B', state: '设计中', status: '检出', version: 'V1.5', boardNumber: 'SCH-002' },
+					{ number: 'DEMO-005', name: '高速PCB设计', state: '已发布', status: '检入', version: 'V2.1', boardNumber: 'PCB-003' },
+					{ number: 'DEMO-006', name: '电源管理模块', state: '设计中', status: '检入', version: 'V1.0', boardNumber: 'PCB-004' },
+					{ number: 'DEMO-007', name: 'RF射频电路', state: '已发布', status: '检入', version: 'V3.0', boardNumber: 'PCB-005' },
+					{ number: 'DEMO-008', name: '数字信号处理', state: '设计中', status: '检入', version: 'V1.8', boardNumber: 'SCH-003' },
+					{ number: 'DEMO-009', name: '模拟前端电路', state: '已发布', status: '检入', version: 'V2.5', boardNumber: 'SCH-004' },
+					{ number: 'DEMO-010', name: '通信接口模块', state: '设计中', status: '检入', version: 'V1.3', boardNumber: 'PCB-006' },
+					{ number: 'DEMO-011', name: '传感器阵列', state: '已发布', status: '检入', version: 'V2.2', boardNumber: 'PCB-007' },
+					{ number: 'DEMO-012', name: '控制器主板', state: '设计中', status: '检入', version: 'V1.9', boardNumber: 'PCB-008' },
+					{ number: 'DEMO-013', name: '显示驱动电路', state: '已发布', status: '检入', version: 'V3.1', boardNumber: 'SCH-005' },
+					{ number: 'DEMO-014', name: '音频处理模块', state: '设计中', status: '检入', version: 'V1.4', boardNumber: 'PCB-009' },
+					{ number: 'DEMO-015', name: '存储控制器', state: '已发布', status: '检入', version: 'V2.8', boardNumber: 'PCB-010' }
+				];
+				
+				// 保存初始检出数据到storage
+				try {
+					const checkoutData = fileData.filter(item => item.status === '检出');
+					eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
+					console.log('初始检出数据已保存到storage：', checkoutData);
+				} catch (error) {
+					console.error('保存初始检出数据到storage失败：', error);
+				}
+				
+				initTables(fileData);
+				eda.sys_ToastMessage.showMessage('MOCK数据加载成功', 3);
+			}
+
+			/**
+			 * 格式化日期为字符串（YYYYMMDDHHMMSS）
+			 * @param {Date|number} nows - 日期对象或时间戳
+			 * @returns {string} 格式化后的日期字符串
+			 */
+			function formatDate(nows) {
+				// 数字补零函数
+				function f(num) {
+					return num >= 10 ? num : '0' + num;
+				}
+				
+				// 处理不同类型的输入
+				if (nows instanceof Date) {
+					if (nows.getTime().toString().length > 13) {
+						nows = new Date(nows.getTime() / 1000);
+					}
+				} else if (!Number.isNaN(Number(nows))) {
+					if (nows.toString().length > 13) {
+						nows = new Date(Number(nows) / 1000);
+					}
+				}
+				
+				const now = new Date(nows);
+				if (Number.isNaN(now.getTime())) {
+					return '-';
+				}
+				
+				const year = now.getFullYear();
+				const month = f(now.getMonth() + 1);
+				const date = f(now.getDate());
+				const hour = f(now.getHours());
+				const minute = f(now.getMinutes());
+				const second = f(now.getSeconds());
+				return `${year}${month}${date}${hour}${minute}${second}`;
+			}
+
+			/**
+			 * 获取API地址（模拟模式）
+			 */
+			function getApiUrl() {
+				return 'http://mock-api.example.com';
+			}
+			
+			function getCheckOutUrl() {
+				return 'http://mock-api.example.com';
+			}
+			
+			async function getFileDia() {
+				fileDia = await eda.sys_FileSystem.openReadFileDialog();
+			}
+
+			/**
+			 * 初始化表格数据
+			 * @param {Array} data - 文件数据数组
+			 * @param {string} type - 操作类型（search/checkout）
+			 */
+			async function initTables(data, type) {
+				// 根据类型清空对应表格
+				if (type && type === 'search') {
+					fileTableBody.innerHTML = '';
+				} else if (type && type === 'checkout') {
+					checkoutTableBody.innerHTML = '';
+				} else {
+					// 没有指定类型时，清空并重新填充两个表格
+					fileTableBody.innerHTML = '';
+					checkoutTableBody.innerHTML = '';
+				}
+
+				// 遍历数据并填充表格
+				data.forEach((row) => {
+					// 检入状态的文件显示在查询列表
+					if (row.status === '检入') {
+						if (!type || type === 'search') {
+							const tr = createTableRow(row);
+							fileTableBody.appendChild(tr);
+						}
+					} 
+					// 检出状态的文件显示在检出列表
+					else if (row.status === '检出') {
+						if (!type || type === 'checkout') {
+							const tr = createTableRow(row);
+							checkoutTableBody.appendChild(tr);
+						}
+					}
+				});
+			}
+
+			/**
+			 * 创建表格行
+			 * @param {Object} rowData - 行数据
+			 * @returns {HTMLElement} 表格行元素
+			 */
+			function createTableRow(rowData) {
+				const tr = document.createElement('tr');
+				tr.dataset.id = rowData.number;
+				tr.innerHTML = `
+					<td>${rowData.number}</td>
+					<td>${rowData.name}</td>
+					<td>${rowData.state}</td>
+					<td>${rowData.status}</td>
+					<td>${rowData.version}</td>
+					<td>${rowData.boardNumber}</td>
+				`;
+				tr.addEventListener('click', () => selectRow(tr));
+				return tr;
+			}
+
+			/**
+			 * 选中表格行
+			 * @param {HTMLElement} row - 被选中的行元素
+			 */
+			function selectRow(row) {
+				// 取消之前的选中状态
+				if (selectedRow) {
+					selectedRow.classList.remove('selected');
+				}
+				
+				// 设置新的选中行
+				selectedRow = row;
+				selectedRow.classList.add('selected');
+
+				// 启用查看按钮
+				const viewButton = document.getElementById('viewButton');
+				viewButton.disabled = false;
+
+				// 根据选中行所属表格控制编辑按钮状态
+				const editButton = document.getElementById('editButton');
+				const isCheckoutTable = row.closest('#checkoutTable') !== null;
+				editButton.disabled = isCheckoutTable; // 已检出的文件不能再次编辑
+			}
+
+			// ========== 事件监听器 ==========
+			
+			// 查看按钮点击事件
+			document.getElementById('viewButton').addEventListener('click', () => {
+				if (selectedRow) {
+					const fileNumber = selectedRow.cells[0].innerText;
+					const fileName = selectedRow.cells[1].innerText;
+					eda.sys_ToastMessage.showMessage(`查看文件 文件名：${fileName} 编号：${fileNumber}`, 3);
+					viewFile(fileNumber);
+				}
+			});
+
+			// 编辑按钮点击事件
+			document.getElementById('editButton').addEventListener('click', () => {
+				if (selectedRow) {
+					const fileNumber = selectedRow.cells[0].innerText;
+					const fileName = selectedRow.cells[1].innerText;
+					eda.sys_ToastMessage.showMessage(`检出文件 文件名：${fileName} 编号：${fileNumber}`, 3);
+					checkoutFile(fileNumber);
+				}
+			});
+
+			// 搜索按钮点击事件
+			document.getElementById('searchButton').addEventListener('click', async () => {
+				const searchInput = document.getElementById('searchInput').value.trim();
+				const getParams = document.getElementById('typeSelect').value;
+
+				let mockSearchResult;
+				if (searchInput) {
+					// 根据编号或名称过滤数据
+					mockSearchResult = fileData.filter(
+						(item) =>
+							item.number.toLowerCase().includes(searchInput.toLowerCase()) ||
+							item.name.toLowerCase().includes(searchInput.toLowerCase()),
+					);
+					
+					// 如果没有匹配项，创建模拟搜索结果
+					if (mockSearchResult.length === 0) {
+						mockSearchResult = [
+							{
+								number: searchInput.toUpperCase(),
+								name: `搜索结果-${searchInput}`,
+								state: '已发布',
+								status: '检入',
+								version: 'V1.0',
+								boardNumber: getParams === 'pcb' ? 'PCB-SEARCH' : 'SCH-SEARCH',
+							},
+						];
+					}
+				} else {
+					// 空搜索时显示所有检入状态的文件
+					mockSearchResult = fileData.filter((item) => item.status === '检入');
+				}
+
+				// 合并检出数据和搜索结果
+				const checkoutData = fileData.filter((item) => item.status === '检出');
+				fileData = [...checkoutData, ...mockSearchResult];
+
+				initTables(fileData, 'search');
+				eda.sys_ToastMessage.showMessage(`搜索完成，找到 ${mockSearchResult.length} 个结果`, 3);
+			});
+			// 点击表格外区域取消选中
+			document.addEventListener('click', (event) => {
+				if (!document.querySelector('.selected')?.contains(event.target)) {
+					if (selectedRow) {
+						selectedRow.classList.remove('selected');
+						selectedRow = null;
+
+						// 禁用操作按钮
+						const viewButton = document.getElementById('viewButton');
+						const editButton = document.getElementById('editButton');
+						viewButton.disabled = true;
+						editButton.disabled = true;
+					}
+				}
+			});
+
+			// ========== 主要功能函数 ==========
+			
+			/**
+			 * 获取PLM数据并初始化表格（模拟模式）
+			 */
+			async function fetchData() {
+				const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+				const typeSelect = document.getElementById('typeSelect');
+				getParams = typeSelect.value;
+
+				eda.sys_ToastMessage.showMessage('正在获取 PLM 数据...', 2);
+
+				setTimeout(() => {
+					// 模拟API返回数据
+					const mockApiData = [
+						{
+							number: `API_${getParams}_001`,
+							name: `API模拟项目_${getParams}_1`,
+							state: '已发布',
+							status: '检入',
+							version: 'V1.0',
+							boardNumber: getParams === 'pcb' ? 'PCB-API-001' : 'SCH-API-001'
+						},
+						{
+							number: `API_${getParams}_002`,
+							name: `API模拟项目_${getParams}_2`,
+							state: '设计中',
+							status: '检入',
+							version: 'V2.1',
+							boardNumber: getParams === 'pcb' ? 'PCB-API-002' : 'SCH-API-002'
+						},
+						{
+							number: `API_${getParams}_003`,
+							name: `API模拟项目_${getParams}_3`,
+							state: '已发布',
+							status: '检入',
+							version: 'V1.5',
+							boardNumber: getParams === 'pcb' ? 'PCB-API-003' : 'SCH-API-003'
+						}
+					];
+
+					console.log('模拟获取的数据：', mockApiData);
+
+					// 保留已检出文件，合并新数据
+					const newFileData = [];
+					for (const fileDataLine of fileData) {
+						if (fileDataLine.status === '检出') {
+							newFileData.push(fileDataLine);
+						}
+					}
+					fileData = [...newFileData, ...mockApiData];
+					initTables(fileData);
+					eda.sys_ToastMessage.showMessage('获取数据成功', 3);
+				}, 1500);
+			}
+
+			/**
+			 * 检出文件（模拟模式）
+			 * @param {string} fileNumber - 文件编号
+			 */
+			async function checkoutFile(fileNumber) {
+				// 查找目标文件
+				const fileIndex = fileData.findIndex((file) => file.number === fileNumber);
+				if (fileIndex === -1) {
+					eda.sys_ToastMessage.showMessage('未找到指定文件', 0);
+					return;
+				}
+
+				const fileName = fileData[fileIndex].name;
+
+				// 检查文件当前状态
+				if (fileData[fileIndex].status === '检出') {
+					eda.sys_ToastMessage.showMessage('该文件已经是检出状态', 1);
+					return;
+				}
+
+				// 模拟检出过程
+				eda.sys_ToastMessage.showMessage('正在检出文件...', 2);
+
+				setTimeout(() => {
+					// 更新文件状态为检出
+				fileData[fileIndex].status = '检出';
+				
+				// 保存检出数据到storage，供upload.html联动使用
+				try {
+					const checkoutData = fileData.filter(item => item.status === '检出');
+					eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
+					console.log('检出数据已保存到storage：', checkoutData);
+				} catch (error) {
+					console.error('保存检出数据到storage失败：', error);
+				}
+				
+				// 重新初始化两个表格，实现从左边移动到右边的效果
+				initTables(fileData);
+				
+				// 清除当前选中状态
+				if (selectedRow) {
+					selectedRow.classList.remove('selected');
+					selectedRow = null;
+					// 禁用操作按钮
+					const viewButton = document.getElementById('viewButton');
+					const editButton = document.getElementById('editButton');
+					viewButton.disabled = true;
+					editButton.disabled = true;
+				}
+				
+				eda.sys_ToastMessage.showMessage(`文件 ${fileName} 检出成功`, 3);
+
+					// 输出检出信息
+					console.log('文件检出信息：', {
+						fileNumber: fileNumber,
+						fileName: fileName,
+						projectName: `${fileNumber}_${fileName}_${timestamp}`,
+						status: '检出成功',
+					});
+				}, 1500);
+			}
+
+			/**
+			 * 查看文件（模拟模式）
+			 * @param {string} fileNumber - 文件编号
+			 */
+			async function viewFile(fileNumber) {
+				// 查找目标文件
+				const fileIndex = fileData.findIndex((file) => file.number === fileNumber);
+				if (fileIndex === -1) {
+					eda.sys_ToastMessage.showMessage('未找到指定文件', 0);
+					return;
+				}
+
+				const fileName = fileData[fileIndex].name;
+				const version = fileData[fileIndex].version;
+
+				// 模拟文件预览加载
+				eda.sys_ToastMessage.showMessage('正在加载文件预览...', 2);
+
+				setTimeout(() => {
+					eda.sys_ToastMessage.showMessage(`文件 ${fileName} (${version}) 预览加载成功`, 3);
+
+					// 输出预览信息
+					console.log('文件预览信息：', {
+						fileNumber: fileNumber,
+						fileName: fileName,
+						version: version,
+						previewUrl: `mock://preview/${fileNumber}`,
+						projectName: `${fileNumber}_${fileName}_${timestamp}`,
+						status: '预览成功',
+					});
+				}, 1000);
+			}
+
+			// 页面初始化已在window.onload中完成，无需重复调用
+			// fetchData();
+		</script>
+	</body>
+</html>

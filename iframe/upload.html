@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>PLM 检入</title>
+		<style>
+			body {
+				background-color: #f5f5f5;
+				margin: 0;
+				font-family: Arial, sans-serif;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+			}
+
+			.container {
+				background: white;
+				padding: 20px;
+				border-radius: 4px;
+				width: 330px;
+			}
+
+			.input-group {
+				display: flex;
+				align-items: center;
+				margin-bottom: 15px;
+			}
+
+			.input-group label {
+				width: 140px;
+				margin-right: 10px;
+			}
+
+			.checkbox-wrapper {
+				display: flex;
+				align-items: center;
+				margin: 20px 0;
+			}
+
+			.custom-checkbox {
+				margin-right: 10px;
+			}
+
+			.buttons {
+				display: flex;
+				justify-content: flex-end;
+				gap: 10px;
+				margin-top: 20px;
+			}
+
+			button {
+				padding: 8px 16px;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+			}
+
+			.cancel-btn {
+				background: white;
+				color: #333;
+				border: 1px solid #ccc;
+			}
+
+			.cancel-btn:hover {
+				border-color: #007bff;
+			}
+
+			.confirm-btn {
+				background: #007bff;
+				color: white;
+			}
+
+			.confirm-btn:hover {
+				background: #0056b3;
+			}
+
+			.confirm-btn:disabled {
+				background: #cccccc;
+				color: #666666;
+				cursor: not-allowed;
+			}
+
+			.confirm-btn:disabled:hover {
+				background: #cccccc;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="checkbox-wrapper">
+				<input type="checkbox" id="bomCheckbox" class="custom-checkbox" checked />
+				<label for="bomCheckbox"
+					>是否上传 BOM 到 PLM 系统<br /><span style="font-size: 12px; color: #999999"
+						>勾选后将会在检入时同时生成并上传 BOM 文件</span
+					></label
+				>
+			</div>
+			<div class="checkbox-wrapper">
+				<input type="checkbox" id="deleteProjectCheckbox" class="custom-checkbox" checked />
+				<label for="deleteProjectCheckbox"
+					>是否检入后删除工程<br /><span style="font-size: 12px; color: #999999">勾选后将在检入完成后删除当前工程</span></label
+				>
+			</div>
+			<div class="buttons">
+				<button type="button" class="confirm-btn" onclick="handleConfirm()">确认</button>
+			</div>
+		</div>
+
+		<script>
+			window.onload = async function () {
+				const apiUrl = getApiUrl();
+				if (!apiUrl) {
+					eda.sys_ToastMessage.showMessage('缺少 PLM 服务地址，请先输入配置', 0);
+					eda.sys_IFrame.openIFrame('/iframe/setting.html', 430, 310);
+					eda.sys_IFrame.closeIFrame('upload');
+				} else {
+					await autoClick();
+				}
+			};
+
+			/**
+			 * 格式化日期为字符串（YYYYMMDDHHMMSS）
+			 * @param {Date|number} nows - 日期对象或时间戳
+			 * @returns {string} 格式化后的日期字符串
+			 */
+			function formatDate(nows) {
+				function f(num) {
+					return num >= 10 ? num : '0' + num;
+				}
+
+				if (nows instanceof Date) {
+					if (nows.getTime().toString().length > 13) {
+						nows = new Date(nows.getTime() / 1000);
+					}
+				} else if (!Number.isNaN(Number(nows))) {
+					if (nows.toString().length > 13) {
+						nows = new Date(Number(nows) / 1000);
+					}
+				}
+
+				const now = new Date(nows);
+				if (Number.isNaN(now.getTime())) {
+					return '-';
+				}
+
+				const year = now.getFullYear();
+				const month = f(now.getMonth() + 1);
+				const date = f(now.getDate());
+				const hour = f(now.getHours());
+				const minute = f(now.getMinutes());
+				const second = f(now.getSeconds());
+				return `${year}${month}${date}${hour}${minute}${second}`;
+			}
+
+			// 全局变量
+			let fileData = [];
+			const timestamp = formatDate(new Date());
+			const username = eda.sys_Storage.getExtensionUserConfig('USERNAME');
+			const password = eda.sys_Storage.getExtensionUserConfig('PASSWORD');
+
+			/**
+			 * 获取 API 地址配置
+			 */
+			function getApiUrl() {
+				return eda.sys_Storage.getExtensionUserConfig('PLM');
+			}
+
+			/**
+			 * 获取文件上传接口地址
+			 */
+			function getFileUploadUrl() {
+				return eda.sys_Storage.getExtensionUserConfig('PLM');
+			}
+
+			/**
+			 * 检入数据到 PLM 系统（模拟实现）
+			 * @param {Object} data - 检入数据参数
+			 */
+			async function checkinData(data) {
+				eda.sys_ToastMessage.showMessage('正在检入文件到 PLM 系统...', 2);
+
+				return new Promise((resolve) => {
+					setTimeout(() => {
+						const mockResponse = {
+							success: true,
+							message: '检入成功',
+							data: {
+								projectName: data.params.projectName,
+								toolType: data.params.toolType,
+								generateBOM: data.params.generateBOM,
+								version: data.params.metadata.version,
+								platform: data.params.metadata.platform,
+								timestamp: data.params.timestamp,
+							},
+						};
+
+						eda.sys_ToastMessage.showMessage(`检入成功 (MOCK) - 项目: ${data.params.projectName}`, 3);
+						resolve(mockResponse);
+					}, 2000);
+				});
+			}
+
+			/**
+			 * 获取已检出的项目数据（模拟实现）
+			 */
+			async function fetchData() {
+				const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+
+				let getParams = '';
+				if (documentInfo.documentType === 3) {
+					eda.sys_ToastMessage.showMessage('查询已检出的 PCB (MOCK)', 3);
+					getParams = 'pcb';
+				} else {
+					eda.sys_ToastMessage.showMessage('查询已检出的 原理图 (MOCK)', 3);
+					getParams = 'orcad';
+				}
+
+				const mockData = {
+					success: true,
+					data: [
+						{
+							id: 'MOCK001',
+							pn: 'MOCK_PROJECT_001',
+							name: '模拟项目1',
+							type: getParams,
+							status: '已检出',
+							checkoutTime: new Date().toISOString(),
+						},
+						{
+							id: 'MOCK002',
+							pn: 'MOCK_PROJECT_002',
+							name: '模拟项目2',
+							type: getParams,
+							status: '已检出',
+							checkoutTime: new Date().toISOString(),
+						},
+					],
+				};
+
+				console.log('MOCK 获取的数据：', mockData);
+				fileData = mockData.data;
+				eda.sys_ToastMessage.showMessage('获取接口数据成功 (MOCK)', 3);
+			}
+
+			/**
+			 * 自动触发检入操作（仅对PCB文档）
+			 */
+			async function autoClick() {
+				const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+				if (documentInfo.documentType === 3) {
+					await handleConfirm();
+				}
+			}
+			/**
+			 * 处理确认检入操作
+			 */
+			async function handleConfirm() {
+				const confirmBtn = document.querySelector('.confirm-btn');
+				confirmBtn.disabled = true;
+				confirmBtn.textContent = '处理中...';
+
+				try {
+					const isChecked = document.getElementById('bomCheckbox').checked;
+					const deleteAfterCheckin = document.getElementById('deleteProjectCheckbox').checked;
+
+					const projectInfo = await eda.dmt_Project.getCurrentProjectInfo();
+					const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+					const projectName = projectInfo.friendlyName;
+
+					// 提取工程名（去掉时间戳后缀）
+					const extractedName = projectName.replace(/_(\d{14})$/, '') || projectName;
+					eda.sys_ToastMessage.showMessage(`正在检入当前工程：${extractedName}`, 3);
+
+					let titleBlockPlatform = '';
+					let titleBlockDesignVersion = '';
+					let bomData = null;
+
+					// 根据文档类型处理不同的文件
+					if (documentInfo.documentType === 3) {
+						// PCB 文档类型
+						eda.sys_ToastMessage.showMessage('检入 PCB 工程', 3);
+					} else {
+						// 原理图文档类型
+						const titleBlockData = (await eda.dmt_Schematic.getCurrentSchematicInfo()).page[0].titleBlockData;
+						if (titleBlockData['Platform']) {
+							titleBlockPlatform = titleBlockData['Platform'].value;
+						}
+						if (titleBlockData['Design Version']) {
+							titleBlockDesignVersion = titleBlockData['Design Version'].value;
+						}
+
+						// 获取BOM文件（如果选中）
+						if (isChecked === true) {
+							// 使用默认参数获取BOM文件
+							const BOMFile = await eda.sch_ManufactureData.getBomFile(extractedName);
+							bomData = await BOMFile.text();
+							eda.sys_ToastMessage.showMessage('已获取 SCH 的 BOM 文件', 3);
+						}
+					}
+
+					// 构造简单的检入参数
+					const checkinParams = {
+						projectName: extractedName,
+						toolType: documentInfo.documentType === 3 ? 'layout' : 'schematic',
+						generateBOM: isChecked,
+						bomData: bomData,
+						metadata: {
+							version: titleBlockDesignVersion || 'V1.0',
+							platform: titleBlockPlatform || 'Generic Platform',
+						},
+						timestamp: new Date().toISOString(),
+					};
+
+					// 执行简单的模拟检入
+					await checkinData({ params: checkinParams });
+
+					// 检入成功后，从storage中的检出数据中移除该项目
+					try {
+						const checkoutDataStr = eda.sys_Storage.getExtensionUserConfig('CHECKOUT_DATA');
+						if (checkoutDataStr) {
+							let checkoutData = JSON.parse(checkoutDataStr);
+							// 从检出列表中移除已检入的项目
+							checkoutData = checkoutData.filter((item) => item.name !== extractedName && item.number !== extractedName);
+							eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
+						}
+					} catch (error) {
+						console.error('更新检出数据失败：', error);
+					}
+
+					// 检入后删除工程（如果选中）
+					if (deleteAfterCheckin) {
+						try {
+							const project = await eda.dmt_Project.getCurrentProjectInfo();
+							eda.sys_ToastMessage.showMessage('正在删除工程 (MOCK)...', 2);
+							setTimeout(() => {
+								eda.sys_ToastMessage.showMessage('工程删除成功 (MOCK)', 3);
+							}, 1000);
+						} catch (error) {
+							eda.sys_ToastMessage.showMessage('工程删除失败 (MOCK)', 0);
+						}
+					}
+					eda.sys_IFrame.closeIFrame('upload');
+				} catch (error) {
+					console.error('处理过程中发生错误:', error);
+					eda.sys_ToastMessage.showMessage('处理过程中发生错误，请重试', 0);
+					confirmBtn.disabled = false;
+					confirmBtn.textContent = '确认';
+				}
+			}
+		</script>
+	</body>
+</html>

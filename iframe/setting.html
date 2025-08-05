@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>PLM 登录配置</title>
+		<style>
+			body {
+				background-color: #f5f5f5;
+				margin: 0;
+				font-family: Arial, sans-serif;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+			}
+			.container {
+				background: white;
+				padding: 25px;
+				border-radius: 4px;
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+				width: 638px;
+			}
+			.input-group {
+				display: flex;
+				margin-bottom: 15px;
+				align-items: center;
+			}
+			.input-group label {
+				text-align: left;
+				width: 85px;
+				margin-right: 15px;
+				font-size: 14px;
+			}
+			input[type='text'],
+			input[type='password'] {
+				flex: 1;
+				padding: 10px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				box-sizing: border-box;
+				font-size: 14px;
+				min-width: 220px;
+			}
+			/* 团队选择下拉框样式 */
+			#userteam {
+				flex: 1;
+				padding: 10px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				box-sizing: border-box;
+				font-size: 14px;
+				min-width: 100px;
+				max-width: 220px;
+			}
+			.buttons {
+				display: flex;
+				justify-content: flex-end;
+				gap: 10px;
+				margin-top: 20px;
+			}
+			button {
+				padding: 10px 20px;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				font-size: 14px;
+			}
+			.cancel-btn {
+				background: white;
+				color: #333;
+				border: 1px solid #ccc;
+			}
+			.cancel-btn:hover {
+				border-color: #007bff;
+			}
+			.confirm-btn {
+				background: #007bff;
+				color: white;
+			}
+			.confirm-btn:hover {
+				background: #0056b3;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<form id="plmForm">
+				<div class="input-group">
+					<label for="userteam">保存的位置</label>
+					<select id="userteam" required>
+						<option value="">正在加载选项...</option>
+					</select>
+				</div>
+				<div class="input-group">
+					<label for="username">用户名</label>
+					<input type="text" id="username" name="username" required />
+				</div>
+				<div class="input-group">
+					<label for="password">密码</label>
+					<input type="password" id="password" name="password" required />
+				</div>
+				<div class="input-group">
+					<label for="fileUpload">域名地址</label>
+					<input type="text" id="plm" name="plm" placeholder="http://plm.example.com" value="plm.example.com"/>
+				</div>
+
+				<div class="buttons">
+					<button type="button" class="confirm-btn" onclick="saveSetting()">保存</button>
+				</div>
+			</form>
+		</div>
+
+		<script>
+			/**
+			 * 页面加载完成后初始化配置
+			 */
+			document.addEventListener('DOMContentLoaded', async () => {
+				initSelect();
+				const fields = ['USERTEAM', 'USERNAME', 'PASSWORD', 'plm'];
+				fields.forEach((field) => {
+					const value = eda.sys_Storage.getExtensionUserConfig(field);
+					if (value) {
+						const element = document.getElementById(field.toLowerCase());
+						if (element) {
+							element.value = value;
+						}
+					}
+				});
+			});
+
+			/**
+			 * 测试用户密码验证（MOCK模式）
+			 * @param {string} url - PLM服务器地址
+			 * @param {string} username - 用户名
+			 * @param {string} password - 密码
+			 * @param {string} deipaasKeyAuth - 认证密钥
+			 * @returns {Promise<boolean>} 验证结果
+			 */
+			async function testUserPassword(url, username, password, deipaasKeyAuth) {
+				console.log('MOCK 验证用户：', { username, password: '***', url });
+				eda.sys_ToastMessage.showMessage('用户名和密码验证正确 (MOCK)', 3);
+				return true;
+			}
+
+			/**
+			 * 保存PLM配置信息（MOCK模式）
+			 */
+			async function saveSetting() {
+				const userteam = document.getElementById('userteam').value.trim();
+				const username = document.getElementById('username').value.trim();
+				const password = document.getElementById('password').value.trim();
+				const plm = document.getElementById('plm').value.trim();
+
+				if (!userteam || !username || !password || !plm) {
+					eda.sys_ToastMessage.showMessage('请填写完整的配置信息', 0);
+					return;
+				}
+
+				eda.sys_ToastMessage.showMessage('正在验证配置...', 2);
+				
+				setTimeout(async () => {
+					await eda.sys_Storage.setExtensionUserConfig('USERTEAM', userteam);
+					await eda.sys_Storage.setExtensionUserConfig('USERNAME', username);
+					await eda.sys_Storage.setExtensionUserConfig('PASSWORD', password);
+					await eda.sys_Storage.setExtensionUserConfig('PLM', plm);
+					await eda.sys_Storage.setExtensionUserConfig('ACCESS_TOKEN', 'mock_access_token_12345');
+					
+					eda.sys_ToastMessage.showMessage('配置保存成功 (MOCK)', 3);
+					console.log('MOCK 配置数据：', { userteam, username, password: '***', plm });
+					eda.sys_IFrame.closeIFrame('setting');
+				}, 1000);
+			}
+
+			/**
+			 * 加载团队列表，同时获取参与团队和直接团队
+			 */
+			async function loadTeams() {
+				try {
+					// 获取参与团队
+					const involvedTeams = await eda.dmt_Team.getAllInvolvedTeamInfo();
+					// 获取直接团队
+					const directTeams = await eda.dmt_Team.getAllTeamsInfo();
+					const teamSelect = document.getElementById('userteam');
+					teamSelect.innerHTML = ''; // 清空原有选项
+
+					// 计算总团队数量（不去重，因为参与团队和直接团队可能有重叠）
+					const totalTeamCount = (involvedTeams?.length || 0) + (directTeams?.length || 0);
+
+					// 如果只有一个团队，直接添加并选中
+					if (totalTeamCount === 1) {
+						const team = involvedTeams?.[0] || directTeams?.[0];
+						const option = document.createElement('option');
+						option.value = team.name;
+						option.text = team.name;
+						teamSelect.appendChild(option);
+						teamSelect.value = team.name; // 自动选中
+						
+						// 设置保存的团队值
+						const savedTeam = await eda.sys_Storage.getExtensionUserConfig('USERTEAM');
+						if (savedTeam && savedTeam === team.name) {
+							teamSelect.value = savedTeam;
+						}
+						return;
+					}
+
+					// 多个团队时的分组显示
+					if (involvedTeams && involvedTeams.length > 0) {
+						const optGroupInvolved = document.createElement('optgroup');
+						optGroupInvolved.label = '参与团队';
+						involvedTeams.forEach((team) => {
+							const option = document.createElement('option');
+							option.value = team.name;
+							option.text = team.name;
+							optGroupInvolved.appendChild(option);
+						});
+						teamSelect.appendChild(optGroupInvolved);
+					}
+
+					// 添加直接团队分组
+					if (directTeams && directTeams.length > 0) {
+						const optGroupDirect = document.createElement('optgroup');
+						optGroupDirect.label = '直接团队';
+						directTeams.forEach((team) => {
+							const option = document.createElement('option');
+							option.value = team.name;
+							option.text = team.name;
+							optGroupDirect.appendChild(option);
+						});
+						teamSelect.appendChild(optGroupDirect);
+					}
+					
+					// 设置保存的团队值
+					const savedTeam = await eda.sys_Storage.getExtensionUserConfig('USERTEAM');
+					if (savedTeam) {
+						teamSelect.value = savedTeam;
+					}
+				} catch (error) {
+					console.error('加载团队失败:', error);
+				}
+			}
+
+			/**
+			 * 初始化团队选择下拉列表
+			 */
+			async function initSelect() {
+				await loadTeams();
+				const savedValue = eda.sys_Storage.getExtensionUserConfig('USERTEAM');
+				const select = document.getElementById('userteam');
+				
+				if (savedValue && select) {
+					select.value = savedValue;
+				}
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,107 @@
+{
+	"name": "plm-demo",
+	"uuid": "e089d388285a4d6a9afaeb982a1d3d6d",
+	"displayName": "PLM 案例",
+	"description": "该扩展为 PLM 案例",
+	"version": "1.0.0",
+	"publisher": "JLCEDA",
+	"engines": {
+		"eda": "^2.3"
+	},
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "extension-store",
+		"url": ""
+	},
+	"categories": "Other",
+	"keywords": ["SDK"],
+	"images": {
+		"logo": "./images/logo.png"
+	},
+	"homepage": "https://pro.lceda.cn",
+	"bugs": "https://lceda.cn/page/feedback?originPage=other",
+	"activationEvents": {},
+	"entry": "./dist/index",
+	"dependentExtensions": {},
+	"headerMenus": {
+		"home": [
+			{
+				"id": "PLM1",
+				"title": "PLM",
+				"menuItems": [
+					{
+						"id": "PLMDownload",
+						"title": "PLM 检出...",
+						"registerFn": "openIframeDownload"
+					},
+					{
+						"id": "Setting",
+						"title": "设置...",
+						"registerFn": "openIframeSetting"
+					},
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		],
+		"sch": [
+			{
+				"id": "PLM2",
+				"title": "PLM",
+				"menuItems": [
+					{
+						"id": "PLMDownload",
+						"title": "PLM 检出...",
+						"registerFn": "openIframeDownload"
+					},
+					{
+						"id": "PLMUpload",
+						"title": "PLM 检入...",
+						"registerFn": "openIframeUpload"
+					},
+					{
+						"id": "Setting",
+						"title": "设置...",
+						"registerFn": "openIframeSetting"
+					},
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		],
+		"pcb": [
+			{
+				"id": "PLM3",
+				"title": "PLM",
+				"menuItems": [
+					{
+						"id": "PLMDownload",
+						"title": "PLM 检出...",
+						"registerFn": "openIframeDownload"
+					},
+					{
+						"id": "PLMUpload",
+						"title": "PLM 检入...",
+						"registerFn": "openIframeUpload"
+					},
+					{
+						"id": "Setting",
+						"title": "设置...",
+						"registerFn": "openIframeSetting"
+					},
+					{
+						"id": "About",
+						"title": "About...",
+						"registerFn": "about"
+					}
+				]
+			}
+		]
+	}
+}
