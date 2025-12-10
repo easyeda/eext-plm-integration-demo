@@ -270,18 +270,18 @@
 					{ number: 'DEMO-012', name: '控制器主板', state: '设计中', status: '检入', version: 'V1.9', boardNumber: 'PCB-008' },
 					{ number: 'DEMO-013', name: '显示驱动电路', state: '已发布', status: '检入', version: 'V3.1', boardNumber: 'SCH-005' },
 					{ number: 'DEMO-014', name: '音频处理模块', state: '设计中', status: '检入', version: 'V1.4', boardNumber: 'PCB-009' },
-					{ number: 'DEMO-015', name: '存储控制器', state: '已发布', status: '检入', version: 'V2.8', boardNumber: 'PCB-010' }
+					{ number: 'DEMO-015', name: '存储控制器', state: '已发布', status: '检入', version: 'V2.8', boardNumber: 'PCB-010' },
 				];
-				
+
 				// 保存初始检出数据到storage
 				try {
-					const checkoutData = fileData.filter(item => item.status === '检出');
+					const checkoutData = fileData.filter((item) => item.status === '检出');
 					eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
 					console.log('初始检出数据已保存到storage：', checkoutData);
 				} catch (error) {
 					console.error('保存初始检出数据到storage失败：', error);
 				}
-				
+
 				initTables(fileData);
 				eda.sys_ToastMessage.showMessage('MOCK数据加载成功', 3);
 			}
@@ -296,7 +296,7 @@
 				function f(num) {
 					return num >= 10 ? num : '0' + num;
 				}
-				
+
 				// 处理不同类型的输入
 				if (nows instanceof Date) {
 					if (nows.getTime().toString().length > 13) {
@@ -307,12 +307,12 @@
 						nows = new Date(Number(nows) / 1000);
 					}
 				}
-				
+
 				const now = new Date(nows);
 				if (Number.isNaN(now.getTime())) {
 					return '-';
 				}
-				
+
 				const year = now.getFullYear();
 				const month = f(now.getMonth() + 1);
 				const date = f(now.getDate());
@@ -328,11 +328,11 @@
 			function getApiUrl() {
 				return 'http://mock-api.example.com';
 			}
-			
+
 			function getCheckOutUrl() {
 				return 'http://mock-api.example.com';
 			}
-			
+
 			async function getFileDia() {
 				fileDia = await eda.sys_FileSystem.openReadFileDialog();
 			}
@@ -362,7 +362,7 @@
 							const tr = createTableRow(row);
 							fileTableBody.appendChild(tr);
 						}
-					} 
+					}
 					// 检出状态的文件显示在检出列表
 					else if (row.status === '检出') {
 						if (!type || type === 'checkout') {
@@ -402,7 +402,7 @@
 				if (selectedRow) {
 					selectedRow.classList.remove('selected');
 				}
-				
+
 				// 设置新的选中行
 				selectedRow = row;
 				selectedRow.classList.add('selected');
@@ -418,7 +418,7 @@
 			}
 
 			// ========== 事件监听器 ==========
-			
+
 			// 查看按钮点击事件
 			document.getElementById('viewButton').addEventListener('click', () => {
 				if (selectedRow) {
@@ -452,7 +452,7 @@
 							item.number.toLowerCase().includes(searchInput.toLowerCase()) ||
 							item.name.toLowerCase().includes(searchInput.toLowerCase()),
 					);
-					
+
 					// 如果没有匹配项，创建模拟搜索结果
 					if (mockSearchResult.length === 0) {
 						mockSearchResult = [
@@ -495,7 +495,7 @@
 			});
 
 			// ========== 主要功能函数 ==========
-			
+
 			/**
 			 * 获取PLM数据并初始化表格（模拟模式）
 			 */
@@ -515,7 +515,7 @@
 							state: '已发布',
 							status: '检入',
 							version: 'V1.0',
-							boardNumber: getParams === 'pcb' ? 'PCB-API-001' : 'SCH-API-001'
+							boardNumber: getParams === 'pcb' ? 'PCB-API-001' : 'SCH-API-001',
 						},
 						{
 							number: `API_${getParams}_002`,
@@ -523,7 +523,7 @@
 							state: '设计中',
 							status: '检入',
 							version: 'V2.1',
-							boardNumber: getParams === 'pcb' ? 'PCB-API-002' : 'SCH-API-002'
+							boardNumber: getParams === 'pcb' ? 'PCB-API-002' : 'SCH-API-002',
 						},
 						{
 							number: `API_${getParams}_003`,
@@ -531,8 +531,8 @@
 							state: '已发布',
 							status: '检入',
 							version: 'V1.5',
-							boardNumber: getParams === 'pcb' ? 'PCB-API-003' : 'SCH-API-003'
-						}
+							boardNumber: getParams === 'pcb' ? 'PCB-API-003' : 'SCH-API-003',
+						},
 					];
 
 					console.log('模拟获取的数据：', mockApiData);
@@ -563,6 +563,7 @@
 				}
 
 				const fileName = fileData[fileIndex].name;
+				const version = fileData[fileIndex].version;
 
 				// 检查文件当前状态
 				if (fileData[fileIndex].status === '检出') {
@@ -570,46 +571,78 @@
 					return;
 				}
 
-				// 模拟检出过程
-				eda.sys_ToastMessage.showMessage('正在检出文件...', 2);
-
-				setTimeout(() => {
-					// 更新文件状态为检出
-				fileData[fileIndex].status = '检出';
-				
-				// 保存检出数据到storage，供upload.html联动使用
 				try {
-					const checkoutData = fileData.filter(item => item.status === '检出');
-					eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
-					console.log('检出数据已保存到storage：', checkoutData);
-				} catch (error) {
-					console.error('保存检出数据到storage失败：', error);
-				}
-				
-				// 重新初始化两个表格，实现从左边移动到右边的效果
-				initTables(fileData);
-				
-				// 清除当前选中状态
-				if (selectedRow) {
-					selectedRow.classList.remove('selected');
-					selectedRow = null;
-					// 禁用操作按钮
-					const viewButton = document.getElementById('viewButton');
-					const editButton = document.getElementById('editButton');
-					viewButton.disabled = true;
-					editButton.disabled = true;
-				}
-				
-				eda.sys_ToastMessage.showMessage(`文件 ${fileName} 检出成功`, 3);
+					// 模拟检出过程
+					eda.sys_ToastMessage.showMessage('正在检出文件...', 2);
+
+					// 获取当前团队信息
+					const teamInfo = await eda.dmt_Team.getCurrentTeamInfo();
+					console.log('当前团队信息：', teamInfo);
+
+					// 获取扩展包中的test.epro文件 可改为 PLM 中文件
+					const eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
+
+					// 构建项目名称
+					const projectName = `${fileNumber}_${fileName}_${timestamp}`;
+
+					// 构建saveTo参数
+					const saveTo = {
+						operation: 'New Project',
+						newProjectOwnerTeamUuid: teamInfo.uuid,
+						newProjectFriendlyName: projectName,
+						newProjectDescription: `从PLM检出的项目: ${fileName} (${version})`,
+						newProjectCollaborationMode: 1,
+					};
+
+					// 导入项目文件到EDA
+					const importedProject = await eda.sys_FileManager.importProjectByProjectFile(
+						eproFile,
+						'JLCEDA Pro',
+						{ importOption: 'ImportDocument' },
+						saveTo,
+					);
+
+					// 更新文件状态为检出
+					fileData[fileIndex].status = '检出';
+
+					// 保存检出数据到storage，供upload.html联动使用
+					try {
+						const checkoutData = fileData.filter((item) => item.status === '检出');
+						eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
+						console.log('检出数据已保存到storage：', checkoutData);
+					} catch (error) {
+						console.error('保存检出数据到storage失败：', error);
+					}
+
+					// 重新初始化两个表格，实现从左边移动到右边的效果
+					initTables(fileData);
+
+					// 清除当前选中状态
+					if (selectedRow) {
+						selectedRow.classList.remove('selected');
+						selectedRow = null;
+						// 禁用操作按钮
+						const viewButton = document.getElementById('viewButton');
+						const editButton = document.getElementById('editButton');
+						viewButton.disabled = true;
+						editButton.disabled = true;
+					}
+
+					eda.sys_ToastMessage.showMessage(`文件 ${fileName} 检出并导入成功`, 3);
 
 					// 输出检出信息
 					console.log('文件检出信息：', {
 						fileNumber: fileNumber,
 						fileName: fileName,
-						projectName: `${fileNumber}_${fileName}_${timestamp}`,
+						projectName: projectName,
+						teamUuid: teamInfo.uuid,
+						importedProject: importedProject,
 						status: '检出成功',
 					});
-				}, 1500);
+				} catch (error) {
+					console.error('文件检出失败：', error);
+					eda.sys_ToastMessage.showMessage(`文件检出失败: ${error.message}`, 0);
+				}
 			}
 
 			/**
@@ -627,22 +660,56 @@
 				const fileName = fileData[fileIndex].name;
 				const version = fileData[fileIndex].version;
 
-				// 模拟文件预览加载
-				eda.sys_ToastMessage.showMessage('正在加载文件预览...', 2);
+				try {
+					// 显示加载消息
+					eda.sys_ToastMessage.showMessage('正在加载文件...', 2);
 
-				setTimeout(() => {
-					eda.sys_ToastMessage.showMessage(`文件 ${fileName} (${version}) 预览加载成功`, 3);
+					// 获取当前团队信息
+					const teamInfo = await eda.dmt_Team.getCurrentTeamInfo();
+					console.log('当前团队信息：', teamInfo);
 
-					// 输出预览信息
-					console.log('文件预览信息：', {
+					// 获取扩展包中的test.epro文件 可改为 PLM 中文件
+					const eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
+					console.log(eproFile);
+					// 构建项目名称
+					const projectName = `${fileNumber}_${fileName}_${timestamp}`;
+
+					// 构建saveTo参数
+					const saveTo = {
+						operation: 'New Project',
+						newProjectOwnerTeamUuid: teamInfo.uuid,
+						newProjectOwnerFolderUuid: undefined,
+						newProjectFriendlyName: projectName,
+						newProjectDescription: '',
+						newProjectCollaborationMode: 1,
+					};
+
+					// 导入项目文件到EDA
+					const importedProject = await eda.sys_FileManager.importProjectByProjectFile(
+						eproFile,
+						'JLCEDA Pro',
+						{ importOption: 'ImportDocument' },
+						saveTo,
+					);
+
+					eda.sys_ToastMessage.showMessage(`文件 ${fileName} (${version}) 导入成功`, 3);
+
+					// 输出导入信息
+					console.log('文件导入信息：', {
 						fileNumber: fileNumber,
 						fileName: fileName,
 						version: version,
-						previewUrl: `mock://preview/${fileNumber}`,
-						projectName: `${fileNumber}_${fileName}_${timestamp}`,
-						status: '预览成功',
+						eproFile: 'iframe/test.epro',
+						projectName: projectName,
+						teamUuid: teamInfo.uuid,
+						teamName: teamInfo.name,
+						importedProject: importedProject,
+						status: '导入成功',
 					});
-				}, 1000);
+				} catch (error) {
+					console.error('文件导入失败：', error);
+					eda.sys_ToastMessage.showMessage(`文件导入失败: ${error.message}`, 0);
+				}
 			}
 
 			// 页面初始化已在window.onload中完成，无需重复调用
