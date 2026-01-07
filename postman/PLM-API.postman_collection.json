@@ -1,0 +1,378 @@
+{
+	"info": {
+		"_postman_id": "plm-api-001",
+		"name": "PLM API",
+		"description": "PLM 系统接口集合，包括设置、检出、检入相关接口",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://plm.example.com",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "password",
+			"value": "password123",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "projectId",
+			"value": "DEMO-001",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "设置接口",
+			"description": "PLM 系统设置相关接口",
+			"item": [
+				{
+					"name": "用户登录",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "用户登录验证，成功后返回 access_token 用于后续请求"
+					},
+					"response": [
+						{
+							"name": "登录成功",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"expires_in\": 3600,\n        \"user\": {\n            \"id\": \"user_001\",\n            \"username\": \"admin\",\n            \"displayName\": \"管理员\"\n        }\n    },\n    \"message\": \"登录成功\"\n}"
+						}
+					],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.access_token) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.data.access_token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "检出接口",
+			"description": "PLM 系统检出相关接口",
+			"item": [
+				{
+					"name": "获取工程列表",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects?type=all&status=checkin&page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects"],
+							"query": [
+								{
+									"key": "type",
+									"value": "all",
+									"description": "工程类型：all/pcb/schematic"
+								},
+								{
+									"key": "status",
+									"value": "checkin",
+									"description": "状态过滤：all/checkin/checkout"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码"
+								},
+								{
+									"key": "pageSize",
+									"value": "20",
+									"description": "每页数量"
+								}
+							]
+						},
+						"description": "获取 PLM 系统中的工程列表"
+					},
+					"response": [
+						{
+							"name": "获取成功",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"total\": 15,\n        \"page\": 1,\n        \"pageSize\": 20,\n        \"items\": [\n            {\n                \"number\": \"DEMO-001\",\n                \"name\": \"示例PCB项目\",\n                \"state\": \"已发布\",\n                \"status\": \"检入\",\n                \"version\": \"V1.0\",\n                \"boardNumber\": \"PCB-001\",\n                \"type\": \"pcb\",\n                \"createTime\": \"2024-01-15T10:30:00Z\",\n                \"updateTime\": \"2024-01-20T14:20:00Z\"\n            },\n            {\n                \"number\": \"DEMO-002\",\n                \"name\": \"示例原理图项目\",\n                \"state\": \"设计中\",\n                \"status\": \"检入\",\n                \"version\": \"V1.2\",\n                \"boardNumber\": \"SCH-001\",\n                \"type\": \"schematic\",\n                \"createTime\": \"2024-01-10T09:00:00Z\",\n                \"updateTime\": \"2024-01-18T16:45:00Z\"\n            }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "搜索工程",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/search?keyword=DEMO&type=pcb",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "search"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "DEMO",
+									"description": "搜索关键词（编号或名称）"
+								},
+								{
+									"key": "type",
+									"value": "pcb",
+									"description": "工程类型：pcb/schematic"
+								}
+							]
+						},
+						"description": "根据关键词搜索工程"
+					},
+					"response": [
+						{
+							"name": "搜索成功",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"total\": 3,\n        \"items\": [\n            {\n                \"number\": \"DEMO-001\",\n                \"name\": \"示例PCB项目\",\n                \"state\": \"已发布\",\n                \"status\": \"检入\",\n                \"version\": \"V1.0\",\n                \"boardNumber\": \"PCB-001\"\n            }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "检出工程（锁定）",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"projectNumber\": \"{{projectId}}\",\n    \"checkoutReason\": \"设计修改\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/checkout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "checkout"]
+						},
+						"description": "检出工程（将状态改为检出，锁定工程防止他人修改）"
+					},
+					"response": [
+						{
+							"name": "检出成功",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"number\": \"DEMO-001\",\n        \"name\": \"示例PCB项目\",\n        \"status\": \"检出\",\n        \"checkoutUser\": \"admin\",\n        \"checkoutTime\": \"2024-01-25T10:00:00Z\"\n    },\n    \"message\": \"工程检出成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "下载工程文件",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/download?mode=edit",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "download"],
+							"query": [
+								{
+									"key": "mode",
+									"value": "edit",
+									"description": "下载模式：view（只读预览）/edit（编辑模式，需先检出）"
+								}
+							]
+						},
+						"description": "下载工程文件（.epro 格式）"
+					},
+					"response": [
+						{
+							"name": "下载成功",
+							"status": "OK",
+							"code": 200,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/octet-stream"
+								},
+								{
+									"key": "Content-Disposition",
+									"value": "attachment; filename=\"DEMO-001_示例PCB项目.epro\""
+								}
+							],
+							"body": "[Binary .epro file content]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "检入接口",
+			"description": "PLM 系统检入相关接口",
+			"item": [
+				{
+					"name": "检入工程",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"description": "工程文件（.epro 格式）"
+								},
+								{
+									"key": "projectNumber",
+									"value": "{{projectId}}",
+									"type": "text",
+									"description": "工程编号"
+								},
+								{
+									"key": "projectName",
+									"value": "示例PCB项目",
+									"type": "text",
+									"description": "工程名称"
+								},
+								{
+									"key": "version",
+									"value": "V1.1",
+									"type": "text",
+									"description": "版本号"
+								},
+								{
+									"key": "toolType",
+									"value": "pcb",
+									"type": "text",
+									"description": "工程类型：pcb/schematic"
+								},
+								{
+									"key": "checkinComment",
+									"value": "修复布线问题",
+									"type": "text",
+									"description": "检入说明"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/checkin",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "checkin"]
+						},
+						"description": "检入工程文件到 PLM 系统"
+					},
+					"response": [
+						{
+							"name": "检入成功",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"number\": \"DEMO-001\",\n        \"name\": \"示例PCB项目\",\n        \"version\": \"V1.1\",\n        \"status\": \"检入\",\n        \"checkinTime\": \"2024-01-25T15:30:00Z\",\n        \"checkinUser\": \"admin\"\n    },\n    \"message\": \"工程检入成功\"\n}"
+						}
+					]
+				},
+				{
+					"name": "上传 BOM 文件",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"description": "BOM 文件（.csv/.xlsx 格式）"
+								},
+								{
+									"key": "projectNumber",
+									"value": "{{projectId}}",
+									"type": "text",
+									"description": "关联的工程编号"
+								},
+								{
+									"key": "version",
+									"value": "V1.1",
+									"type": "text",
+									"description": "BOM 版本"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/bom",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "bom"]
+						},
+						"description": "上传 BOM 文件到 PLM 系统"
+					},
+					"response": [
+						{
+							"name": "上传成功",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"bomId\": \"bom_001\",\n        \"projectNumber\": \"DEMO-001\",\n        \"version\": \"V1.1\",\n        \"uploadTime\": \"2024-01-25T15:35:00Z\",\n        \"itemCount\": 128\n    },\n    \"message\": \"BOM 上传成功\"\n}"
+						}
+					]
+				}
+			]
+		}
+	]
+}

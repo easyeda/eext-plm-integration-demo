@@ -110,14 +110,21 @@
 		</div>
 
 		<script>
+			// API 模式标志
+			let useRealApi = false;
+
 			window.onload = async function () {
+				// 检查 API 模式配置
+				useRealApi = eda.sys_Storage.getExtensionUserConfig('USE_REAL_API') === 'true';
+				const modeText = useRealApi ? '真实 API' : 'Mock';
+				eda.sys_ToastMessage.showMessage(`当前模式: ${modeText}`, 3);
+				console.log(`[${modeText}] 检入页面初始化`);
+
 				const apiUrl = getApiUrl();
 				if (!apiUrl) {
 					eda.sys_ToastMessage.showMessage('缺少 PLM 服务地址，请先输入配置', 0);
 					eda.sys_IFrame.openIFrame('/iframe/setting.html', 430, 310);
 					eda.sys_IFrame.closeIFrame('upload');
-				} else {
-					await autoClick();
 				}
 			};
 
@@ -176,31 +183,107 @@
 			}
 
 			/**
-			 * 检入数据到 PLM 系统（模拟实现）
+			 * 获取访问令牌
+			 */
+			function getAccessToken() {
+				return eda.sys_Storage.getExtensionUserConfig('ACCESS_TOKEN') || '';
+			}
+
+			/**
+			 * 检入数据到 PLM 系统
 			 * @param {Object} data - 检入数据参数
 			 */
 			async function checkinData(data) {
-				eda.sys_ToastMessage.showMessage('正在检入文件到 PLM 系统...', 2);
+				const modeText = useRealApi ? '真实 API' : 'Mock';
+				eda.sys_ToastMessage.showMessage(`正在检入文件到 PLM 系统 (${modeText})...`, 2);
 
-				return new Promise((resolve) => {
-					setTimeout(() => {
-						const mockResponse = {
-							success: true,
-							message: '检入成功',
-							data: {
-								projectName: data.params.projectName,
-								toolType: data.params.toolType,
-								generateBOM: data.params.generateBOM,
-								version: data.params.metadata.version,
-								platform: data.params.metadata.platform,
-								timestamp: data.params.timestamp,
+				if (!useRealApi) {
+					// Mock 模式
+					return new Promise((resolve) => {
+						setTimeout(() => {
+							const mockResponse = {
+								success: true,
+								message: '检入成功',
+								data: {
+									projectName: data.params.projectName,
+									toolType: data.params.toolType,
+									generateBOM: data.params.generateBOM,
+									version: data.params.metadata.version,
+									platform: data.params.metadata.platform,
+									timestamp: data.params.timestamp,
+								},
+							};
+
+							eda.sys_ToastMessage.showMessage(`检入成功 (Mock) - 项目: ${data.params.projectName}`, 3);
+							resolve(mockResponse);
+						}, 2000);
+					});
+				}
+
+				// 真实 API 模式
+				const apiUrl = getApiUrl();
+				const token = getAccessToken();
+				const projectNumber = data.params.projectNumber || data.params.projectName;
+
+				try {
+					// 1. 检入工程
+					eda.sys_ToastMessage.showMessage('正在上传工程文件...', 2);
+
+					const checkinResponse = await fetch(`${apiUrl}/api/projects/${projectNumber}/checkin`, {
+						method: 'POST',
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							projectNumber: projectNumber,
+							projectName: data.params.projectName,
+							toolType: data.params.toolType,
+							version: data.params.metadata.version,
+							checkinComment: '从嘉立创 EDA 检入',
+							metadata: data.params.metadata,
+						}),
+					});
+
+					if (!checkinResponse.ok) {
+						const errorResult = await checkinResponse.json();
+						throw new Error(errorResult.message || `检入失败: HTTP ${checkinResponse.status}`);
+					}
+
+					const checkinResult = await checkinResponse.json();
+
+					// 2. 上传 BOM（如果需要）
+					if (data.params.generateBOM && data.params.bomData) {
+						eda.sys_ToastMessage.showMessage('正在上传 BOM 文件...', 2);
+
+						const bomResponse = await fetch(`${apiUrl}/api/projects/${projectNumber}/bom`, {
+							method: 'POST',
+							headers: {
+								'Authorization': `Bearer ${token}`,
+								'Content-Type': 'application/json',
 							},
-						};
+							body: JSON.stringify({
+								projectNumber: projectNumber,
+								version: data.params.metadata.version,
+								bomData: data.params.bomData,
+							}),
+						});
 
-						eda.sys_ToastMessage.showMessage(`检入成功 (MOCK) - 项目: ${data.params.projectName}`, 3);
-						resolve(mockResponse);
-					}, 2000);
-				});
+						if (!bomResponse.ok) {
+							console.warn('BOM 上传失败，但工程检入成功');
+							eda.sys_ToastMessage.showMessage('BOM 上传失败，工程已检入', 1);
+						} else {
+							eda.sys_ToastMessage.showMessage('BOM 上传成功', 3);
+						}
+					}
+
+					eda.sys_ToastMessage.showMessage(`检入成功 (真实 API) - 项目: ${data.params.projectName}`, 3);
+					return checkinResult;
+				} catch (error) {
+					console.error('[真实 API] 检入失败:', error);
+					eda.sys_ToastMessage.showMessage(`检入失败: ${error.message}`, 0);
+					throw error;
+				}
 			}
 
 			/**
@@ -262,6 +345,8 @@
 				confirmBtn.disabled = true;
 				confirmBtn.textContent = '处理中...';
 
+				const modeText = useRealApi ? '真实 API' : 'Mock';
+
 				try {
 					const isChecked = document.getElementById('bomCheckbox').checked;
 					const deleteAfterCheckin = document.getElementById('deleteProjectCheckbox').checked;
@@ -272,7 +357,7 @@
 
 					// 提取工程名（去掉时间戳后缀）
 					const extractedName = projectName.replace(/_(\d{14})$/, '') || projectName;
-					eda.sys_ToastMessage.showMessage(`正在检入当前工程：${extractedName}`, 3);
+					eda.sys_ToastMessage.showMessage(`正在检入当前工程 (${modeText})：${extractedName}`, 3);
 
 					let titleBlockPlatform = '';
 					let titleBlockDesignVersion = '';
@@ -281,7 +366,7 @@
 					// 根据文档类型处理不同的文件
 					if (documentInfo.documentType === 3) {
 						// PCB 文档类型
-						eda.sys_ToastMessage.showMessage('检入 PCB 工程', 3);
+						eda.sys_ToastMessage.showMessage(`检入 PCB 工程 (${modeText})`, 3);
 					} else {
 						// 原理图文档类型
 						const titleBlockData = (await eda.dmt_Schematic.getCurrentSchematicInfo()).page[0].titleBlockData;
@@ -334,12 +419,12 @@
 					if (deleteAfterCheckin) {
 						try {
 							const project = await eda.dmt_Project.getCurrentProjectInfo();
-							eda.sys_ToastMessage.showMessage('正在删除工程 (MOCK)...', 2);
+							eda.sys_ToastMessage.showMessage(`正在删除工程 (${modeText})...`, 2);
 							setTimeout(() => {
-								eda.sys_ToastMessage.showMessage('工程删除成功 (MOCK)', 3);
+								eda.sys_ToastMessage.showMessage(`工程删除成功 (${modeText})`, 3);
 							}, 1000);
 						} catch (error) {
-							eda.sys_ToastMessage.showMessage('工程删除失败 (MOCK)', 0);
+							eda.sys_ToastMessage.showMessage(`工程删除失败 (${modeText})`, 0);
 						}
 					}
 					eda.sys_IFrame.closeIFrame('upload');

@@ -82,6 +82,47 @@
 			.confirm-btn:hover {
 				background: #0056b3;
 			}
+			/* 分段按钮样式 */
+			.switch-group {
+				display: flex;
+				margin-bottom: 15px;
+				align-items: center;
+			}
+			.switch-group > label {
+				text-align: left;
+				width: 85px;
+				margin-right: 15px;
+				font-size: 14px;
+			}
+			.segmented-control {
+				display: inline-flex;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.segmented-control input[type='radio'] {
+				display: none;
+			}
+			.segmented-control label {
+				padding: 8px 20px;
+				font-size: 14px;
+				color: #666;
+				background: #fff;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				border-right: 1px solid #ccc;
+				user-select: none;
+			}
+			.segmented-control label:last-of-type {
+				border-right: none;
+			}
+			.segmented-control label:hover {
+				background: #f5f5f5;
+			}
+			.segmented-control input[type='radio']:checked + label {
+				background: #007bff;
+				color: #fff;
+			}
 		</style>
 	</head>
 	<body>
@@ -103,7 +144,16 @@
 				</div>
 				<div class="input-group">
 					<label for="fileUpload">域名地址</label>
-					<input type="text" id="plm" name="plm" placeholder="http://plm.example.com" value="plm.example.com"/>
+					<input type="text" id="plm" name="plm" placeholder="http://plm.example.com" value="plm.example.com" />
+				</div>
+				<div class="switch-group">
+					<label>API 模式</label>
+					<div class="segmented-control">
+						<input type="radio" id="apiModeMock" name="apiMode" value="mock" checked />
+						<label for="apiModeMock">Mock</label>
+						<input type="radio" id="apiModeReal" name="apiMode" value="real" />
+						<label for="apiModeReal">真实 API</label>
+					</div>
 				</div>
 
 				<div class="buttons">
@@ -128,49 +178,102 @@
 						}
 					}
 				});
+
+				// 加载 API 模式配置
+				const useRealApi = eda.sys_Storage.getExtensionUserConfig('USE_REAL_API');
+				if (useRealApi === 'true') {
+					document.getElementById('apiModeReal').checked = true;
+				} else {
+					document.getElementById('apiModeMock').checked = true;
+				}
 			});
 
 			/**
-			 * 测试用户密码验证（MOCK模式）
+			 * 测试用户密码验证
 			 * @param {string} url - PLM服务器地址
 			 * @param {string} username - 用户名
 			 * @param {string} password - 密码
-			 * @param {string} deipaasKeyAuth - 认证密钥
-			 * @returns {Promise<boolean>} 验证结果
+			 * @param {boolean} useRealApi - 是否使用真实API
+			 * @returns {Promise<{success: boolean, token?: string, message?: string}>} 验证结果
 			 */
-			async function testUserPassword(url, username, password, deipaasKeyAuth) {
-				console.log('MOCK 验证用户：', { username, password: '***', url });
-				eda.sys_ToastMessage.showMessage('用户名和密码验证正确 (MOCK)', 3);
-				return true;
+			async function testUserPassword(url, username, password, useRealApi) {
+				if (!useRealApi) {
+					// Mock 模式
+					console.log('[Mock] 验证用户：', { username, password: '***', url });
+					eda.sys_ToastMessage.showMessage('用户名和密码验证正确 (Mock 模式)', 3);
+					return { success: true, token: 'mock_access_token_12345' };
+				}
+
+				// 真实 API 模式
+				try {
+					eda.sys_ToastMessage.showMessage('正在连接 PLM 服务器...', 2);
+					const response = await fetch(`${url}/api/auth/login`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ username, password }),
+					});
+
+					const result = await response.json();
+
+					if (response.ok && result.success) {
+						eda.sys_ToastMessage.showMessage('登录验证成功 (真实 API)', 3);
+						return { success: true, token: result.data?.access_token };
+					} else {
+						eda.sys_ToastMessage.showMessage(`登录失败: ${result.message || '未知错误'}`, 0);
+						return { success: false, message: result.message };
+					}
+				} catch (error) {
+					console.error('API 请求失败:', error);
+					eda.sys_ToastMessage.showMessage(`连接服务器失败: ${error.message}`, 0);
+					return { success: false, message: error.message };
+				}
 			}
 
 			/**
-			 * 保存PLM配置信息（MOCK模式）
+			 * 保存PLM配置信息
 			 */
 			async function saveSetting() {
 				const userteam = document.getElementById('userteam').value.trim();
 				const username = document.getElementById('username').value.trim();
 				const password = document.getElementById('password').value.trim();
 				const plm = document.getElementById('plm').value.trim();
+				const useRealApi = document.getElementById('apiModeReal').checked;
 
 				if (!userteam || !username || !password || !plm) {
 					eda.sys_ToastMessage.showMessage('请填写完整的配置信息', 0);
 					return;
 				}
 
+				// 格式化 PLM 地址
+				let plmUrl = plm;
+				if (!plmUrl.startsWith('http://') && !plmUrl.startsWith('https://')) {
+					plmUrl = 'http://' + plmUrl;
+				}
+
 				eda.sys_ToastMessage.showMessage('正在验证配置...', 2);
-				
-				setTimeout(async () => {
-					await eda.sys_Storage.setExtensionUserConfig('USERTEAM', userteam);
-					await eda.sys_Storage.setExtensionUserConfig('USERNAME', username);
-					await eda.sys_Storage.setExtensionUserConfig('PASSWORD', password);
-					await eda.sys_Storage.setExtensionUserConfig('PLM', plm);
-					await eda.sys_Storage.setExtensionUserConfig('ACCESS_TOKEN', 'mock_access_token_12345');
-					
-					eda.sys_ToastMessage.showMessage('配置保存成功 (MOCK)', 3);
-					console.log('MOCK 配置数据：', { userteam, username, password: '***', plm });
-					eda.sys_IFrame.closeIFrame('setting');
-				}, 1000);
+
+				// 验证用户名密码
+				const authResult = await testUserPassword(plmUrl, username, password, useRealApi);
+
+				if (!authResult.success) {
+					return;
+				}
+
+				// 保存配置
+				await eda.sys_Storage.setExtensionUserConfig('USERTEAM', userteam);
+				await eda.sys_Storage.setExtensionUserConfig('USERNAME', username);
+				await eda.sys_Storage.setExtensionUserConfig('PASSWORD', password);
+				await eda.sys_Storage.setExtensionUserConfig('PLM', plmUrl);
+				await eda.sys_Storage.setExtensionUserConfig('USE_REAL_API', useRealApi.toString());
+				await eda.sys_Storage.setExtensionUserConfig('ACCESS_TOKEN', authResult.token || '');
+
+				const modeText = useRealApi ? '真实 API' : 'Mock';
+				eda.sys_ToastMessage.showMessage(`配置保存成功 (${modeText} 模式)`, 3);
+				console.log(`[${modeText}] 配置数据：`, { userteam, username, password: '***', plm: plmUrl, useRealApi });
+
+				eda.sys_IFrame.closeIFrame('setting');
 			}
 
 			/**
@@ -196,7 +299,7 @@
 						option.text = team.name;
 						teamSelect.appendChild(option);
 						teamSelect.value = team.name; // 自动选中
-						
+
 						// 设置保存的团队值
 						const savedTeam = await eda.sys_Storage.getExtensionUserConfig('USERTEAM');
 						if (savedTeam && savedTeam === team.name) {
@@ -230,7 +333,7 @@
 						});
 						teamSelect.appendChild(optGroupDirect);
 					}
-					
+
 					// 设置保存的团队值
 					const savedTeam = await eda.sys_Storage.getExtensionUserConfig('USERTEAM');
 					if (savedTeam) {
@@ -248,7 +351,7 @@
 				await loadTeams();
 				const savedValue = eda.sys_Storage.getExtensionUserConfig('USERTEAM');
 				const select = document.getElementById('userteam');
-				
+
 				if (savedValue && select) {
 					select.value = savedValue;
 				}

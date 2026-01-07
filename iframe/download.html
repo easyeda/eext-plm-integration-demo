@@ -238,6 +238,7 @@
 			let fileTableBody = document.querySelector('#fileTable tbody');
 			let checkoutTableBody = document.querySelector('#checkoutTable tbody');
 			let selectedRow = null;
+			let useRealApi = false; // API 模式标志
 
 			// PLM相关变量（预留）
 			let teamName, teamUUid, folders, folderUUid, folderInfo, fileDia;
@@ -247,8 +248,18 @@
 			console.log(`当前时间戳：${timestamp}`);
 
 			// 页面加载完成后初始化
-			window.onload = function () {
-				loadMockData();
+			window.onload = async function () {
+				// 检查 API 模式配置
+				useRealApi = eda.sys_Storage.getExtensionUserConfig('USE_REAL_API') === 'true';
+				const modeText = useRealApi ? '真实 API' : 'Mock';
+				eda.sys_ToastMessage.showMessage(`当前模式: ${modeText}`, 3);
+				console.log(`[${modeText}] 模式初始化`);
+
+				if (useRealApi) {
+					await loadRealData();
+				} else {
+					loadMockData();
+				}
 			};
 
 			/**
@@ -323,14 +334,57 @@
 			}
 
 			/**
-			 * 获取API地址（模拟模式）
+			 * 获取API地址
 			 */
 			function getApiUrl() {
-				return 'http://mock-api.example.com';
+				return eda.sys_Storage.getExtensionUserConfig('PLM') || 'http://mock-api.example.com';
 			}
 
-			function getCheckOutUrl() {
-				return 'http://mock-api.example.com';
+			/**
+			 * 获取访问令牌
+			 */
+			function getAccessToken() {
+				return eda.sys_Storage.getExtensionUserConfig('ACCESS_TOKEN') || '';
+			}
+
+			/**
+			 * 加载真实API数据
+			 */
+			async function loadRealData() {
+				const apiUrl = getApiUrl();
+				const token = getAccessToken();
+
+				eda.sys_ToastMessage.showMessage('正在从 PLM 服务器获取数据...', 2);
+
+				try {
+					const response = await fetch(`${apiUrl}/api/projects?type=all&status=all`, {
+						method: 'GET',
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json',
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					}
+
+					const result = await response.json();
+
+					if (result.success && result.data) {
+						fileData = result.data.items || result.data;
+						initTables(fileData);
+						eda.sys_ToastMessage.showMessage(`数据加载成功 (真实 API)，共 ${fileData.length} 条`, 3);
+						console.log('[真实 API] 获取的数据：', fileData);
+					} else {
+						throw new Error(result.message || '获取数据失败');
+					}
+				} catch (error) {
+					console.error('[真实 API] 加载数据失败:', error);
+					eda.sys_ToastMessage.showMessage(`加载失败: ${error.message}，将使用 Mock 数据`, 0);
+					// 降级到 Mock 数据
+					loadMockData();
+				}
 			}
 
 			async function getFileDia() {
@@ -442,8 +496,67 @@
 			// 搜索按钮点击事件
 			document.getElementById('searchButton').addEventListener('click', async () => {
 				const searchInput = document.getElementById('searchInput').value.trim();
-				const getParams = document.getElementById('typeSelect').value;
+				const typeParam = document.getElementById('typeSelect').value;
 
+				if (useRealApi) {
+					// 真实 API 搜索
+					await searchRealApi(searchInput, typeParam);
+				} else {
+					// Mock 搜索
+					searchMockData(searchInput, typeParam);
+				}
+			});
+
+			/**
+			 * 真实 API 搜索
+			 */
+			async function searchRealApi(keyword, type) {
+				const apiUrl = getApiUrl();
+				const token = getAccessToken();
+
+				eda.sys_ToastMessage.showMessage('正在搜索...', 2);
+
+				try {
+					const url = keyword
+						? `${apiUrl}/api/projects/search?keyword=${encodeURIComponent(keyword)}&type=${type}`
+						: `${apiUrl}/api/projects?type=${type}&status=all`;
+
+					const response = await fetch(url, {
+						method: 'GET',
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json',
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					}
+
+					const result = await response.json();
+
+					if (result.success && result.data) {
+						const searchResult = result.data.items || result.data;
+						// 保留检出数据
+						const checkoutData = fileData.filter((item) => item.status === '检出');
+						const checkinData = searchResult.filter((item) => item.status === '检入');
+						fileData = [...checkoutData, ...checkinData];
+
+						initTables(fileData, 'search');
+						eda.sys_ToastMessage.showMessage(`搜索完成 (真实 API)，找到 ${checkinData.length} 个结果`, 3);
+					} else {
+						throw new Error(result.message || '搜索失败');
+					}
+				} catch (error) {
+					console.error('[真实 API] 搜索失败:', error);
+					eda.sys_ToastMessage.showMessage(`搜索失败: ${error.message}`, 0);
+				}
+			}
+
+			/**
+			 * Mock 数据搜索
+			 */
+			function searchMockData(searchInput, typeParam) {
 				let mockSearchResult;
 				if (searchInput) {
 					// 根据编号或名称过滤数据
@@ -462,7 +575,7 @@
 								state: '已发布',
 								status: '检入',
 								version: 'V1.0',
-								boardNumber: getParams === 'pcb' ? 'PCB-SEARCH' : 'SCH-SEARCH',
+								boardNumber: typeParam === 'pcb' ? 'PCB-SEARCH' : 'SCH-SEARCH',
 							},
 						];
 					}
@@ -476,8 +589,8 @@
 				fileData = [...checkoutData, ...mockSearchResult];
 
 				initTables(fileData, 'search');
-				eda.sys_ToastMessage.showMessage(`搜索完成，找到 ${mockSearchResult.length} 个结果`, 3);
-			});
+				eda.sys_ToastMessage.showMessage(`搜索完成 (Mock)，找到 ${mockSearchResult.length} 个结果`, 3);
+			}
 			// 点击表格外区域取消选中
 			document.addEventListener('click', (event) => {
 				if (!document.querySelector('.selected')?.contains(event.target)) {
@@ -551,7 +664,7 @@
 			}
 
 			/**
-			 * 检出文件（模拟模式）
+			 * 检出文件
 			 * @param {string} fileNumber - 文件编号
 			 */
 			async function checkoutFile(fileNumber) {
@@ -571,16 +684,58 @@
 					return;
 				}
 
+				const modeText = useRealApi ? '真实 API' : 'Mock';
+
 				try {
-					// 模拟检出过程
-					eda.sys_ToastMessage.showMessage('正在检出文件...', 2);
+					eda.sys_ToastMessage.showMessage(`正在检出文件 (${modeText})...`, 2);
+
+					let eproFile;
+
+					if (useRealApi) {
+						// 真实 API: 先锁定工程，再下载文件
+						const apiUrl = getApiUrl();
+						const token = getAccessToken();
+
+						// 1. 调用检出接口锁定工程
+						eda.sys_ToastMessage.showMessage('正在锁定工程...', 2);
+						const checkoutResponse = await fetch(`${apiUrl}/api/projects/${fileNumber}/checkout`, {
+							method: 'POST',
+							headers: {
+								'Authorization': `Bearer ${token}`,
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({ projectNumber: fileNumber, checkoutReason: '设计修改' }),
+						});
+
+						if (!checkoutResponse.ok) {
+							const errorResult = await checkoutResponse.json();
+							throw new Error(errorResult.message || `锁定失败: HTTP ${checkoutResponse.status}`);
+						}
+
+						// 2. 下载工程文件
+						eda.sys_ToastMessage.showMessage('正在下载工程文件...', 2);
+						const downloadResponse = await fetch(`${apiUrl}/api/projects/${fileNumber}/download?mode=edit`, {
+							method: 'GET',
+							headers: {
+								'Authorization': `Bearer ${token}`,
+							},
+						});
+
+						if (!downloadResponse.ok) {
+							throw new Error(`下载失败: HTTP ${downloadResponse.status}`);
+						}
+
+						const blob = await downloadResponse.blob();
+						eproFile = new File([blob], `${fileNumber}.epro`, { type: 'application/octet-stream' });
+						console.log('[真实 API] 工程文件下载成功:', eproFile);
+					} else {
+						// Mock 模式: 使用本地测试文件
+						eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
+					}
 
 					// 获取当前团队信息
 					const teamInfo = await eda.dmt_Team.getCurrentTeamInfo();
 					console.log('当前团队信息：', teamInfo);
-
-					// 获取扩展包中的test.epro文件 可改为 PLM 中文件
-					const eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
 
 					// 构建项目名称
 					const projectName = `${fileNumber}_${fileName}_${timestamp}`;
@@ -628,10 +783,10 @@
 						editButton.disabled = true;
 					}
 
-					eda.sys_ToastMessage.showMessage(`文件 ${fileName} 检出并导入成功`, 3);
+					eda.sys_ToastMessage.showMessage(`文件 ${fileName} 检出并导入成功 (${modeText})`, 3);
 
 					// 输出检出信息
-					console.log('文件检出信息：', {
+					console.log(`[${modeText}] 文件检出信息：`, {
 						fileNumber: fileNumber,
 						fileName: fileName,
 						projectName: projectName,
@@ -646,7 +801,7 @@
 			}
 
 			/**
-			 * 查看文件（模拟模式）
+			 * 查看文件（只读预览）
 			 * @param {string} fileNumber - 文件编号
 			 */
 			async function viewFile(fileNumber) {
@@ -659,18 +814,42 @@
 
 				const fileName = fileData[fileIndex].name;
 				const version = fileData[fileIndex].version;
+				const modeText = useRealApi ? '真实 API' : 'Mock';
 
 				try {
-					// 显示加载消息
-					eda.sys_ToastMessage.showMessage('正在加载文件...', 2);
+					eda.sys_ToastMessage.showMessage(`正在加载文件 (${modeText})...`, 2);
+
+					let eproFile;
+
+					if (useRealApi) {
+						// 真实 API: 下载文件（只读模式）
+						const apiUrl = getApiUrl();
+						const token = getAccessToken();
+
+						eda.sys_ToastMessage.showMessage('正在下载工程文件...', 2);
+						const downloadResponse = await fetch(`${apiUrl}/api/projects/${fileNumber}/download?mode=view`, {
+							method: 'GET',
+							headers: {
+								'Authorization': `Bearer ${token}`,
+							},
+						});
+
+						if (!downloadResponse.ok) {
+							throw new Error(`下载失败: HTTP ${downloadResponse.status}`);
+						}
+
+						const blob = await downloadResponse.blob();
+						eproFile = new File([blob], `${fileNumber}.epro`, { type: 'application/octet-stream' });
+						console.log('[真实 API] 工程文件下载成功 (只读):', eproFile);
+					} else {
+						// Mock 模式: 使用本地测试文件
+						eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
+					}
 
 					// 获取当前团队信息
 					const teamInfo = await eda.dmt_Team.getCurrentTeamInfo();
 					console.log('当前团队信息：', teamInfo);
 
-					// 获取扩展包中的test.epro文件 可改为 PLM 中文件
-					const eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
-					console.log(eproFile);
 					// 构建项目名称
 					const projectName = `${fileNumber}_${fileName}_${timestamp}`;
 
@@ -680,7 +859,7 @@
 						newProjectOwnerTeamUuid: teamInfo.uuid,
 						newProjectOwnerFolderUuid: undefined,
 						newProjectFriendlyName: projectName,
-						newProjectDescription: '',
+						newProjectDescription: `只读预览: ${fileName} (${version})`,
 						newProjectCollaborationMode: 1,
 					};
 
@@ -692,14 +871,13 @@
 						saveTo,
 					);
 
-					eda.sys_ToastMessage.showMessage(`文件 ${fileName} (${version}) 导入成功`, 3);
+					eda.sys_ToastMessage.showMessage(`文件 ${fileName} (${version}) 导入成功 (${modeText})`, 3);
 
 					// 输出导入信息
-					console.log('文件导入信息：', {
+					console.log(`[${modeText}] 文件导入信息：`, {
 						fileNumber: fileNumber,
 						fileName: fileName,
 						version: version,
-						eproFile: 'iframe/test.epro',
 						projectName: projectName,
 						teamUuid: teamInfo.uuid,
 						teamName: teamInfo.name,

@@ -12,5 +12,5 @@ export function openIframeUpload(): void {
 	eda.sys_IFrame.openIFrame('/iframe/upload.html', 350, 220, 'upload');
 }
 export function openIframeSetting(): void {
-	eda.sys_IFrame.openIFrame('/iframe/setting.html', 430, 310, 'setting');
+	eda.sys_IFrame.openIFrame('/iframe/setting.html', 430, 360, 'setting');
 }

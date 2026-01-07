@@ -3,7 +3,7 @@
 	"uuid": "e089d388285a4d6a9afaeb982a1d3d6d",
 	"displayName": "PLM 案例",
 	"description": "该扩展为 PLM 案例",
-	"version": "2.1.1",
+	"version": "2.1.2",
 	"publisher": "JLCEDA",
 	"engines": {
 		"eda": "^2.3"
