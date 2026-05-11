@@ -1,5 +1,7 @@
 # PLM 案例
 
+[English](./README.en.md)
+
 嘉立创 EDA 专业版 PLM（产品生命周期管理）对接参考案例扩展。
 
 ## 功能特性

@@ -1,10 +1,12 @@
 # PLM Integration Demo
 
-A reference extension for PLM (Product Lifecycle Management) integration with JLCEDA Pro.
+[中文](./README.md)
+
+A reference extension for PLM (Product Lifecycle Management) integration with EasyEDA Pro.
 
 ## Features
 
-- **Project Checkout**: Checkout project files (.epro) from PLM system, auto-import and open in JLCEDA
+- **Project Checkout**: Checkout project files (.epro) from PLM system, auto-import and open in EasyEDA
 - **Project Checkin**: Checkin current project back to PLM system
 - **BOM Sync**: Upload BOM file along with project during checkin
 - **Auto Cleanup**: Optionally delete local project after checkin
@@ -136,6 +138,6 @@ To customize API endpoints or parameters, modify:
 
 ## Links
 
-- [JLCEDA Pro](https://pro.lceda.cn/)
+- [EasyEDA Pro](https://pro.lceda.cn/)
 - [Extension API Documentation](https://prodocs.lceda.cn/cn/extension/started/quick-start/)
 - [Issue Tracker](https://github.com/easyeda/eext-plm-integration-demo/issues)
