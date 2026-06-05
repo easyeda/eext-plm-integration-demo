@@ -1,3 +1,6 @@
 {
-	"About...": "About..."
+	"About...": "About...",
+	"PLM 案例": "PLM Demo",
+	"该扩展为 PLM 案例": "This extension is a PLM integration demo",
+	"SDK": "SDK"
 }

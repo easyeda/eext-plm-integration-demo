@@ -1,16 +1,14 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-CN">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>PLM 检出</title>
+		<title id="pageTitle"></title>
 		<style>
-			/* 全局样式 */
 			body {
-				font-family: Arial, sans-serif;
 				background-color: #f5f5f5;
 				margin: 0;
-				padding: 0;
+				font-family: Arial, sans-serif;
 				display: flex;
 				justify-content: center;
 				align-items: center;
@@ -18,284 +16,130 @@
 			}
 
 			.container {
-				width: 100%;
-				height: 560px;
-				background-color: #fff;
+				background: white;
 				padding: 20px;
-				border-radius: 8px;
-				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+				border-radius: 4px;
+				width: 330px;
 			}
 
-			h1 {
-				text-align: center;
-				margin-bottom: 20px;
+			.input-group {
+				display: flex;
+				align-items: center;
+				margin-bottom: 15px;
 			}
 
-			/* 搜索栏样式 */
-			.search-bar {
+			.input-group label {
+				width: 140px;
+				margin-right: 10px;
+			}
+
+			.checkbox-wrapper {
 				display: flex;
 				align-items: center;
 				margin: 20px 0;
 			}
 
-			.search-bar input {
-				padding: 8px 12px;
-				border: 1px solid #ccc;
-				border-radius: 4px;
-				width: 20%;
+			.custom-checkbox {
+				margin-right: 10px;
 			}
 
-			.search-bar select {
-				padding: 8px 12px;
-				border: 1px solid #ccc;
-				border-radius: 4px;
-				margin-left: 10px;
-				background-color: white;
-			}
-
-			.search-bar select:hover {
-				border-color: #999;
-			}
-
-			.search-bar button {
-				padding: 8px 16px;
-				border: none;
-				border-radius: 4px;
-				background-color: #007bff;
-				color: white;
-				cursor: pointer;
-				margin-left: 10px;
-			}
-
-			.search-bar button:hover {
-				background-color: #0056b3;
-			}
-
-			/* 表格容器样式 */
-			.tables-container {
+			.buttons {
 				display: flex;
-				gap: 20px;
-				height: 430px;
-			}
-
-			.table-wrapper {
-				flex: 1;
-				border: 1px solid #ddd;
-				border-radius: 8px;
-				overflow: hidden;
-				display: flex;
-				flex-direction: column;
-				max-height: 430px;
-			}
-
-			.table-wrapper .table-content {
-				flex: 1;
-				overflow-y: auto;
-				max-height: calc(430px - 41px); /* 减去标题高度 */
-			}
-
-			.table-wrapper .table-content::-webkit-scrollbar {
-				width: 8px;
-			}
-
-			.table-wrapper .table-content::-webkit-scrollbar-track {
-				background: #f1f1f1;
-				border-radius: 4px;
-			}
-
-			.table-wrapper .table-content::-webkit-scrollbar-thumb {
-				background: #c1c1c1;
-				border-radius: 4px;
-			}
-
-			.table-wrapper .table-content::-webkit-scrollbar-thumb:hover {
-				background: #a8a8a8;
-			}
-
-			.table-wrapper h2 {
-				margin: 0;
-				padding: 10px;
-				background-color: #f0f0f0;
-				border-bottom: 1px solid #ddd;
-			}
-
-			/* 表格样式 */
-			table {
-				width: 100%;
-				border-collapse: collapse;
-				table-layout: auto;
-			}
-
-			table th,
-			table td {
-				padding: 10px;
-				text-align: center;
-				border: 1px solid #ddd;
-				white-space: nowrap;
-				width: auto;
-			}
-
-			/* 选中行样式 */
-			.selected {
-				background-color: #d1e7dd;
-			}
-
-			/* 操作按钮样式 */
-			.left-buttons {
-				display: flex;
+				justify-content: flex-end;
 				gap: 10px;
-				margin-top: 10px;
+				margin-top: 20px;
 			}
 
-			.left-buttons button {
+			button {
 				padding: 8px 16px;
 				border: none;
 				border-radius: 4px;
 				cursor: pointer;
+				transition: all 0.3s ease;
 			}
 
-			.left-buttons button[disabled] {
-				background-color: #ccc;
-				color: #666;
+			.cancel-btn {
+				background: white;
+				color: #333;
+				border: 1px solid #ccc;
+			}
+
+			.cancel-btn:hover {
+				border-color: #007bff;
+			}
+
+			.confirm-btn {
+				background: #007bff;
+				color: white;
+			}
+
+			.confirm-btn:hover {
+				background: #0056b3;
+			}
+
+			.confirm-btn:disabled {
+				background: #cccccc;
+				color: #666666;
 				cursor: not-allowed;
 			}
 
-			.left-buttons button:not([disabled]) {
-				background-color: #007bff;
-				color: white;
-			}
-
-			.left-buttons button:not([disabled]):hover {
-				background-color: #0056b3;
+			.confirm-btn:disabled:hover {
+				background: #cccccc;
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
-			<!-- 搜索栏 -->
-			<div class="search-bar">
-				<input type="text" id="searchInput" placeholder="输入编码" />
-				<select id="typeSelect">
-					<option value="pcb">PCB</option>
-					<option value="orcad">原理图</option>
-				</select>
-				<button id="searchButton">搜索</button>
+			<div class="checkbox-wrapper">
+				<input type="checkbox" id="bomCheckbox" class="custom-checkbox" checked />
+				<label for="bomCheckbox"
+					><span id="bomLabel"></span><br /><span style="font-size: 12px; color: #999999" id="bomHint"></span
+					></label
+				>
 			</div>
-
-			<!-- 双表格显示区域 -->
-			<div class="tables-container">
-				<!-- 查询结果表格 -->
-				<div class="table-wrapper left-table">
-					<h2>查询列表</h2>
-					<div class="table-content">
-						<table id="fileTable">
-							<thead>
-								<tr>
-									<th>number</th>
-									<th>name</th>
-									<th>state</th>
-									<th>status</th>
-									<th>version</th>
-									<th>boardNumber</th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-						</table>
-					</div>
-				</div>
-
-				<!-- 已检出文件表格 -->
-				<div class="table-wrapper right-table">
-					<h2>检出列表</h2>
-					<div class="table-content">
-						<table id="checkoutTable">
-							<thead>
-								<tr>
-									<th>number</th>
-									<th>name</th>
-									<th>state</th>
-									<th>status</th>
-									<th>version</th>
-									<th>boardNumber</th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-						</table>
-					</div>
-				</div>
+			<div class="checkbox-wrapper">
+				<input type="checkbox" id="deleteProjectCheckbox" class="custom-checkbox" checked />
+				<label for="deleteProjectCheckbox"
+					><span id="deleteLabel"></span><br /><span style="font-size: 12px; color: #999999" id="deleteHint"></span></label
+				>
 			</div>
-
-			<!-- 操作按钮 -->
-			<div class="left-buttons">
-				<button id="viewButton" disabled>查看</button>
-				<button id="editButton" disabled>编辑</button>
+			<div class="buttons">
+				<button type="button" class="confirm-btn" id="confirmBtn" onclick="handleConfirm()"></button>
 			</div>
 		</div>
 
 		<script>
-			// 全局变量
-			let fileData = [];
-			let fileTableBody = document.querySelector('#fileTable tbody');
-			let checkoutTableBody = document.querySelector('#checkoutTable tbody');
-			let selectedRow = null;
-			let useRealApi = false; // API 模式标志
+			var edaObj = (typeof eda !== 'undefined') ? eda : (window.parent && window.parent.eda);
+			function t(tag, ...args) {
+				if (edaObj && edaObj.sys_I18n) return edaObj.sys_I18n.text(tag, undefined, undefined, ...args);
+				return tag;
+			}
 
-			// PLM相关变量（预留）
-			let teamName, teamUUid, folders, folderUUid, folderInfo, fileDia;
+			// API 模式标志
+			let useRealApi = false;
 
-			// 生成时间戳
-			const timestamp = formatDate(new Date());
-			console.log(`当前时间戳：${timestamp}`);
-
-			// 页面加载完成后初始化
 			window.onload = async function () {
+				// 初始化 HTML 文本
+				document.getElementById('pageTitle').textContent = t('PLM Checkin');
+				document.getElementById('bomLabel').textContent = t('Upload BOM to PLM system on checkin');
+				document.getElementById('bomHint').textContent = t('Generate and upload BOM file during checkin');
+				document.getElementById('deleteLabel').textContent = t('Delete project after checkin');
+				document.getElementById('deleteHint').textContent = t('Delete current project after checkin is complete');
+				document.getElementById('confirmBtn').textContent = t('Confirm');
+
 				// 检查 API 模式配置
 				useRealApi = eda.sys_Storage.getExtensionUserConfig('USE_REAL_API') === 'true';
-				const modeText = useRealApi ? '真实 API' : 'Mock';
-				eda.sys_ToastMessage.showMessage(`当前模式: ${modeText}`, 3);
-				console.log(`[${modeText}] 模式初始化`);
+				const modeText = useRealApi ? t('Real API') : 'Mock';
+				eda.sys_ToastMessage.showMessage(t('Current mode: ${1}', modeText), 3);
+				console.log(`[${modeText}] 检入页面初始化`);
 
-				if (useRealApi) {
-					await loadRealData();
-				} else {
-					loadMockData();
+				const apiUrl = getApiUrl();
+				if (!apiUrl) {
+					eda.sys_ToastMessage.showMessage(t('Missing PLM service address, please configure first'), 0);
+					eda.sys_IFrame.openIFrame('/iframe/setting.html', 430, 310);
+					eda.sys_IFrame.closeIFrame('upload');
 				}
 			};
-
-			/**
-			 * 加载模拟数据
-			 */
-			function loadMockData() {
-				fileData = [
-					{ number: 'DEMO-001', name: '示例PCB项目', state: '已发布', status: '检入', version: 'V1.0', boardNumber: 'PCB-001' },
-					{ number: 'DEMO-002', name: '示例原理图项目', state: '设计中', status: '检入', version: 'V1.2', boardNumber: 'SCH-001' },
-					{ number: 'DEMO-003', name: '测试项目A', state: '已发布', status: '检出', version: 'V2.0', boardNumber: 'PCB-002' },
-					{ number: 'DEMO-004', name: '测试项目B', state: '设计中', status: '检出', version: 'V1.5', boardNumber: 'SCH-002' },
-					{ number: 'DEMO-005', name: '高速PCB设计', state: '已发布', status: '检入', version: 'V2.1', boardNumber: 'PCB-003' },
-					{ number: 'DEMO-006', name: '电源管理模块', state: '设计中', status: '检入', version: 'V1.0', boardNumber: 'PCB-004' },
-					{ number: 'DEMO-007', name: 'RF射频电路', state: '已发布', status: '检入', version: 'V3.0', boardNumber: 'PCB-005' },
-					{ number: 'DEMO-008', name: '数字信号处理', state: '设计中', status: '检入', version: 'V1.8', boardNumber: 'SCH-003' },
-					{ number: 'DEMO-009', name: '模拟前端电路', state: '已发布', status: '检入', version: 'V2.5', boardNumber: 'SCH-004' },
-					{ number: 'DEMO-010', name: '通信接口模块', state: '设计中', status: '检入', version: 'V1.3', boardNumber: 'PCB-006' },
-					{ number: 'DEMO-011', name: '传感器阵列', state: '已发布', status: '检入', version: 'V2.2', boardNumber: 'PCB-007' },
-					{ number: 'DEMO-012', name: '控制器主板', state: '设计中', status: '检入', version: 'V1.9', boardNumber: 'PCB-008' },
-					{ number: 'DEMO-013', name: '显示驱动电路', state: '已发布', status: '检入', version: 'V3.1', boardNumber: 'SCH-005' },
-					{ number: 'DEMO-014', name: '音频处理模块', state: '设计中', status: '检入', version: 'V1.4', boardNumber: 'PCB-009' },
-					{ number: 'DEMO-015', name: '存储控制器', state: '已发布', status: '检入', version: 'V2.8', boardNumber: 'PCB-010' },
-				];
-
-				// 保存初始检出数据到storage
-				try {
-					const checkoutData = fileData.filter((item) => item.status === '检出');
-					eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
-					console.log('初始检出数据已保存到storage：', checkoutData);
-				} catch (error) {
-					console.error('保存初始检出数据到storage失败：', error);
-				}
-
-				initTables(fileData);
-				eda.sys_ToastMessage.showMessage('MOCK数据加载成功', 3);
-			}
 
 			/**
 			 * 格式化日期为字符串（YYYYMMDDHHMMSS）
@@ -303,12 +147,10 @@
 			 * @returns {string} 格式化后的日期字符串
 			 */
 			function formatDate(nows) {
-				// 数字补零函数
 				function f(num) {
 					return num >= 10 ? num : '0' + num;
 				}
 
-				// 处理不同类型的输入
 				if (nows instanceof Date) {
 					if (nows.getTime().toString().length > 13) {
 						nows = new Date(nows.getTime() / 1000);
@@ -333,11 +175,24 @@
 				return `${year}${month}${date}${hour}${minute}${second}`;
 			}
 
+			// 全局变量
+			let fileData = [];
+			const timestamp = formatDate(new Date());
+			const username = eda.sys_Storage.getExtensionUserConfig('USERNAME');
+			const password = eda.sys_Storage.getExtensionUserConfig('PASSWORD');
+
 			/**
-			 * 获取API地址
+			 * 获取 API 地址配置
 			 */
 			function getApiUrl() {
-				return eda.sys_Storage.getExtensionUserConfig('PLM') || 'http://mock-api.example.com';
+				return eda.sys_Storage.getExtensionUserConfig('PLM');
+			}
+
+			/**
+			 * 获取文件上传接口地址
+			 */
+			function getFileUploadUrl() {
+				return eda.sys_Storage.getExtensionUserConfig('PLM');
 			}
 
 			/**
@@ -348,550 +203,251 @@
 			}
 
 			/**
-			 * 加载真实API数据
+			 * 检入数据到 PLM 系统
+			 * @param {Object} data - 检入数据参数
 			 */
-			async function loadRealData() {
+			async function checkinData(data) {
+				const modeText = useRealApi ? t('Real API') : 'Mock';
+				eda.sys_ToastMessage.showMessage(t('Checking in file to PLM system (${1})...', modeText), 2);
+
+				if (!useRealApi) {
+					// Mock 模式
+					return new Promise((resolve) => {
+						setTimeout(() => {
+							const mockResponse = {
+								success: true,
+								message: t('Checkin successful'),
+								data: {
+									projectName: data.params.projectName,
+									toolType: data.params.toolType,
+									generateBOM: data.params.generateBOM,
+									version: data.params.metadata.version,
+									platform: data.params.metadata.platform,
+									timestamp: data.params.timestamp,
+								},
+							};
+
+							eda.sys_ToastMessage.showMessage(t('Checkin succeeded (Mock) - Project: ${1}', data.params.projectName), 3);
+							resolve(mockResponse);
+						}, 2000);
+					});
+				}
+
+				// 真实 API 模式
 				const apiUrl = getApiUrl();
 				const token = getAccessToken();
-
-				eda.sys_ToastMessage.showMessage('正在从 PLM 服务器获取数据...', 2);
+				const projectNumber = data.params.projectNumber || data.params.projectName;
 
 				try {
-					const response = await fetch(`${apiUrl}/api/projects?type=all&status=all`, {
-						method: 'GET',
+					// 1. 检入工程
+					eda.sys_ToastMessage.showMessage(t('Uploading project file...'), 2);
+
+					const checkinResponse = await fetch(`${apiUrl}/api/projects/${projectNumber}/checkin`, {
+						method: 'POST',
 						headers: {
 							'Authorization': `Bearer ${token}`,
 							'Content-Type': 'application/json',
 						},
+						body: JSON.stringify({
+							projectNumber: projectNumber,
+							projectName: data.params.projectName,
+							toolType: data.params.toolType,
+							version: data.params.metadata.version,
+							checkinComment: t('Checked in from EasyEDA'),
+							metadata: data.params.metadata,
+						}),
 					});
 
-					if (!response.ok) {
-						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					if (!checkinResponse.ok) {
+						const errorResult = await checkinResponse.json();
+						throw new Error(errorResult.message || t('Checkin failed: HTTP ${1}', checkinResponse.status));
 					}
 
-					const result = await response.json();
+					const checkinResult = await checkinResponse.json();
 
-					if (result.success && result.data) {
-						fileData = result.data.items || result.data;
-						initTables(fileData);
-						eda.sys_ToastMessage.showMessage(`数据加载成功 (真实 API)，共 ${fileData.length} 条`, 3);
-						console.log('[真实 API] 获取的数据：', fileData);
-					} else {
-						throw new Error(result.message || '获取数据失败');
-					}
-				} catch (error) {
-					console.error('[真实 API] 加载数据失败:', error);
-					eda.sys_ToastMessage.showMessage(`加载失败: ${error.message}，将使用 Mock 数据`, 0);
-					// 降级到 Mock 数据
-					loadMockData();
-				}
-			}
+					// 2. 上传 BOM（如果需要）
+					if (data.params.generateBOM && data.params.bomData) {
+						eda.sys_ToastMessage.showMessage(t('Uploading BOM file...'), 2);
 
-			async function getFileDia() {
-				fileDia = await eda.sys_FileSystem.openReadFileDialog();
-			}
-
-			/**
-			 * 初始化表格数据
-			 * @param {Array} data - 文件数据数组
-			 * @param {string} type - 操作类型（search/checkout）
-			 */
-			async function initTables(data, type) {
-				// 根据类型清空对应表格
-				if (type && type === 'search') {
-					fileTableBody.innerHTML = '';
-				} else if (type && type === 'checkout') {
-					checkoutTableBody.innerHTML = '';
-				} else {
-					// 没有指定类型时，清空并重新填充两个表格
-					fileTableBody.innerHTML = '';
-					checkoutTableBody.innerHTML = '';
-				}
-
-				// 遍历数据并填充表格
-				data.forEach((row) => {
-					// 检入状态的文件显示在查询列表
-					if (row.status === '检入') {
-						if (!type || type === 'search') {
-							const tr = createTableRow(row);
-							fileTableBody.appendChild(tr);
-						}
-					}
-					// 检出状态的文件显示在检出列表
-					else if (row.status === '检出') {
-						if (!type || type === 'checkout') {
-							const tr = createTableRow(row);
-							checkoutTableBody.appendChild(tr);
-						}
-					}
-				});
-			}
-
-			/**
-			 * 创建表格行
-			 * @param {Object} rowData - 行数据
-			 * @returns {HTMLElement} 表格行元素
-			 */
-			function createTableRow(rowData) {
-				const tr = document.createElement('tr');
-				tr.dataset.id = rowData.number;
-				tr.innerHTML = `
-					<td>${rowData.number}</td>
-					<td>${rowData.name}</td>
-					<td>${rowData.state}</td>
-					<td>${rowData.status}</td>
-					<td>${rowData.version}</td>
-					<td>${rowData.boardNumber}</td>
-				`;
-				tr.addEventListener('click', () => selectRow(tr));
-				return tr;
-			}
-
-			/**
-			 * 选中表格行
-			 * @param {HTMLElement} row - 被选中的行元素
-			 */
-			function selectRow(row) {
-				// 取消之前的选中状态
-				if (selectedRow) {
-					selectedRow.classList.remove('selected');
-				}
-
-				// 设置新的选中行
-				selectedRow = row;
-				selectedRow.classList.add('selected');
-
-				// 启用查看按钮
-				const viewButton = document.getElementById('viewButton');
-				viewButton.disabled = false;
-
-				// 根据选中行所属表格控制编辑按钮状态
-				const editButton = document.getElementById('editButton');
-				const isCheckoutTable = row.closest('#checkoutTable') !== null;
-				editButton.disabled = isCheckoutTable; // 已检出的文件不能再次编辑
-			}
-
-			// ========== 事件监听器 ==========
-
-			// 查看按钮点击事件
-			document.getElementById('viewButton').addEventListener('click', () => {
-				if (selectedRow) {
-					const fileNumber = selectedRow.cells[0].innerText;
-					const fileName = selectedRow.cells[1].innerText;
-					eda.sys_ToastMessage.showMessage(`查看文件 文件名：${fileName} 编号：${fileNumber}`, 3);
-					viewFile(fileNumber);
-				}
-			});
-
-			// 编辑按钮点击事件
-			document.getElementById('editButton').addEventListener('click', () => {
-				if (selectedRow) {
-					const fileNumber = selectedRow.cells[0].innerText;
-					const fileName = selectedRow.cells[1].innerText;
-					eda.sys_ToastMessage.showMessage(`检出文件 文件名：${fileName} 编号：${fileNumber}`, 3);
-					checkoutFile(fileNumber);
-				}
-			});
-
-			// 搜索按钮点击事件
-			document.getElementById('searchButton').addEventListener('click', async () => {
-				const searchInput = document.getElementById('searchInput').value.trim();
-				const typeParam = document.getElementById('typeSelect').value;
-
-				if (useRealApi) {
-					// 真实 API 搜索
-					await searchRealApi(searchInput, typeParam);
-				} else {
-					// Mock 搜索
-					searchMockData(searchInput, typeParam);
-				}
-			});
-
-			/**
-			 * 真实 API 搜索
-			 */
-			async function searchRealApi(keyword, type) {
-				const apiUrl = getApiUrl();
-				const token = getAccessToken();
-
-				eda.sys_ToastMessage.showMessage('正在搜索...', 2);
-
-				try {
-					const url = keyword
-						? `${apiUrl}/api/projects/search?keyword=${encodeURIComponent(keyword)}&type=${type}`
-						: `${apiUrl}/api/projects?type=${type}&status=all`;
-
-					const response = await fetch(url, {
-						method: 'GET',
-						headers: {
-							'Authorization': `Bearer ${token}`,
-							'Content-Type': 'application/json',
-						},
-					});
-
-					if (!response.ok) {
-						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-					}
-
-					const result = await response.json();
-
-					if (result.success && result.data) {
-						const searchResult = result.data.items || result.data;
-						// 保留检出数据
-						const checkoutData = fileData.filter((item) => item.status === '检出');
-						const checkinData = searchResult.filter((item) => item.status === '检入');
-						fileData = [...checkoutData, ...checkinData];
-
-						initTables(fileData, 'search');
-						eda.sys_ToastMessage.showMessage(`搜索完成 (真实 API)，找到 ${checkinData.length} 个结果`, 3);
-					} else {
-						throw new Error(result.message || '搜索失败');
-					}
-				} catch (error) {
-					console.error('[真实 API] 搜索失败:', error);
-					eda.sys_ToastMessage.showMessage(`搜索失败: ${error.message}`, 0);
-				}
-			}
-
-			/**
-			 * Mock 数据搜索
-			 */
-			function searchMockData(searchInput, typeParam) {
-				let mockSearchResult;
-				if (searchInput) {
-					// 根据编号或名称过滤数据
-					mockSearchResult = fileData.filter(
-						(item) =>
-							item.number.toLowerCase().includes(searchInput.toLowerCase()) ||
-							item.name.toLowerCase().includes(searchInput.toLowerCase()),
-					);
-
-					// 如果没有匹配项，创建模拟搜索结果
-					if (mockSearchResult.length === 0) {
-						mockSearchResult = [
-							{
-								number: searchInput.toUpperCase(),
-								name: `搜索结果-${searchInput}`,
-								state: '已发布',
-								status: '检入',
-								version: 'V1.0',
-								boardNumber: typeParam === 'pcb' ? 'PCB-SEARCH' : 'SCH-SEARCH',
-							},
-						];
-					}
-				} else {
-					// 空搜索时显示所有检入状态的文件
-					mockSearchResult = fileData.filter((item) => item.status === '检入');
-				}
-
-				// 合并检出数据和搜索结果
-				const checkoutData = fileData.filter((item) => item.status === '检出');
-				fileData = [...checkoutData, ...mockSearchResult];
-
-				initTables(fileData, 'search');
-				eda.sys_ToastMessage.showMessage(`搜索完成 (Mock)，找到 ${mockSearchResult.length} 个结果`, 3);
-			}
-			// 点击表格外区域取消选中
-			document.addEventListener('click', (event) => {
-				if (!document.querySelector('.selected')?.contains(event.target)) {
-					if (selectedRow) {
-						selectedRow.classList.remove('selected');
-						selectedRow = null;
-
-						// 禁用操作按钮
-						const viewButton = document.getElementById('viewButton');
-						const editButton = document.getElementById('editButton');
-						viewButton.disabled = true;
-						editButton.disabled = true;
-					}
-				}
-			});
-
-			// ========== 主要功能函数 ==========
-
-			/**
-			 * 获取PLM数据并初始化表格（模拟模式）
-			 */
-			async function fetchData() {
-				const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
-				const typeSelect = document.getElementById('typeSelect');
-				getParams = typeSelect.value;
-
-				eda.sys_ToastMessage.showMessage('正在获取 PLM 数据...', 2);
-
-				setTimeout(() => {
-					// 模拟API返回数据
-					const mockApiData = [
-						{
-							number: `API_${getParams}_001`,
-							name: `API模拟项目_${getParams}_1`,
-							state: '已发布',
-							status: '检入',
-							version: 'V1.0',
-							boardNumber: getParams === 'pcb' ? 'PCB-API-001' : 'SCH-API-001',
-						},
-						{
-							number: `API_${getParams}_002`,
-							name: `API模拟项目_${getParams}_2`,
-							state: '设计中',
-							status: '检入',
-							version: 'V2.1',
-							boardNumber: getParams === 'pcb' ? 'PCB-API-002' : 'SCH-API-002',
-						},
-						{
-							number: `API_${getParams}_003`,
-							name: `API模拟项目_${getParams}_3`,
-							state: '已发布',
-							status: '检入',
-							version: 'V1.5',
-							boardNumber: getParams === 'pcb' ? 'PCB-API-003' : 'SCH-API-003',
-						},
-					];
-
-					console.log('模拟获取的数据：', mockApiData);
-
-					// 保留已检出文件，合并新数据
-					const newFileData = [];
-					for (const fileDataLine of fileData) {
-						if (fileDataLine.status === '检出') {
-							newFileData.push(fileDataLine);
-						}
-					}
-					fileData = [...newFileData, ...mockApiData];
-					initTables(fileData);
-					eda.sys_ToastMessage.showMessage('获取数据成功', 3);
-				}, 1500);
-			}
-
-			/**
-			 * 检出文件
-			 * @param {string} fileNumber - 文件编号
-			 */
-			async function checkoutFile(fileNumber) {
-				// 查找目标文件
-				const fileIndex = fileData.findIndex((file) => file.number === fileNumber);
-				if (fileIndex === -1) {
-					eda.sys_ToastMessage.showMessage('未找到指定文件', 0);
-					return;
-				}
-
-				const fileName = fileData[fileIndex].name;
-				const version = fileData[fileIndex].version;
-
-				// 检查文件当前状态
-				if (fileData[fileIndex].status === '检出') {
-					eda.sys_ToastMessage.showMessage('该文件已经是检出状态', 1);
-					return;
-				}
-
-				const modeText = useRealApi ? '真实 API' : 'Mock';
-
-				try {
-					eda.sys_ToastMessage.showMessage(`正在检出文件 (${modeText})...`, 2);
-
-					let eproFile;
-
-					if (useRealApi) {
-						// 真实 API: 先锁定工程，再下载文件
-						const apiUrl = getApiUrl();
-						const token = getAccessToken();
-
-						// 1. 调用检出接口锁定工程
-						eda.sys_ToastMessage.showMessage('正在锁定工程...', 2);
-						const checkoutResponse = await fetch(`${apiUrl}/api/projects/${fileNumber}/checkout`, {
+						const bomResponse = await fetch(`${apiUrl}/api/projects/${projectNumber}/bom`, {
 							method: 'POST',
 							headers: {
 								'Authorization': `Bearer ${token}`,
 								'Content-Type': 'application/json',
 							},
-							body: JSON.stringify({ projectNumber: fileNumber, checkoutReason: '设计修改' }),
+							body: JSON.stringify({
+								projectNumber: projectNumber,
+								version: data.params.metadata.version,
+								bomData: data.params.bomData,
+							}),
 						});
 
-						if (!checkoutResponse.ok) {
-							const errorResult = await checkoutResponse.json();
-							throw new Error(errorResult.message || `锁定失败: HTTP ${checkoutResponse.status}`);
+						if (!bomResponse.ok) {
+							console.warn('BOM 上传失败，但工程检入成功');
+							eda.sys_ToastMessage.showMessage(t('BOM upload failed, project checked in'), 1);
+						} else {
+							eda.sys_ToastMessage.showMessage(t('BOM upload succeeded'), 3);
 						}
-
-						// 2. 下载工程文件
-						eda.sys_ToastMessage.showMessage('正在下载工程文件...', 2);
-						const downloadResponse = await fetch(`${apiUrl}/api/projects/${fileNumber}/download?mode=edit`, {
-							method: 'GET',
-							headers: {
-								'Authorization': `Bearer ${token}`,
-							},
-						});
-
-						if (!downloadResponse.ok) {
-							throw new Error(`下载失败: HTTP ${downloadResponse.status}`);
-						}
-
-						const blob = await downloadResponse.blob();
-						eproFile = new File([blob], `${fileNumber}.epro`, { type: 'application/octet-stream' });
-						console.log('[真实 API] 工程文件下载成功:', eproFile);
-					} else {
-						// Mock 模式: 使用本地测试文件
-						eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
 					}
 
-					// 获取当前团队信息
-					const teamInfo = await eda.dmt_Team.getCurrentTeamInfo();
-					console.log('当前团队信息：', teamInfo);
-
-					// 构建项目名称
-					const projectName = `${fileNumber}_${fileName}_${timestamp}`;
-
-					// 构建saveTo参数
-					const saveTo = {
-						operation: 'New Project',
-						newProjectOwnerTeamUuid: teamInfo.uuid,
-						newProjectFriendlyName: projectName,
-						newProjectDescription: `从PLM检出的项目: ${fileName} (${version})`,
-						newProjectCollaborationMode: 1,
-					};
-
-					// 导入项目文件到EDA
-					const importedProject = await eda.sys_FileManager.importProjectByProjectFile(
-						eproFile,
-						'JLCEDA Pro',
-						{ importOption: 'ImportDocument' },
-						saveTo,
-					);
-
-					// 更新文件状态为检出
-					fileData[fileIndex].status = '检出';
-
-					// 保存检出数据到storage，供upload.html联动使用
-					try {
-						const checkoutData = fileData.filter((item) => item.status === '检出');
-						eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
-						console.log('检出数据已保存到storage：', checkoutData);
-					} catch (error) {
-						console.error('保存检出数据到storage失败：', error);
-					}
-
-					// 重新初始化两个表格，实现从左边移动到右边的效果
-					initTables(fileData);
-
-					// 清除当前选中状态
-					if (selectedRow) {
-						selectedRow.classList.remove('selected');
-						selectedRow = null;
-						// 禁用操作按钮
-						const viewButton = document.getElementById('viewButton');
-						const editButton = document.getElementById('editButton');
-						viewButton.disabled = true;
-						editButton.disabled = true;
-					}
-
-					eda.sys_ToastMessage.showMessage(`文件 ${fileName} 检出并导入成功 (${modeText})`, 3);
-
-					// 输出检出信息
-					console.log(`[${modeText}] 文件检出信息：`, {
-						fileNumber: fileNumber,
-						fileName: fileName,
-						projectName: projectName,
-						teamUuid: teamInfo.uuid,
-						importedProject: importedProject,
-						status: '检出成功',
-					});
+					eda.sys_ToastMessage.showMessage(t('Checkin succeeded (Real API) - Project: ${1}', data.params.projectName), 3);
+					return checkinResult;
 				} catch (error) {
-					console.error('文件检出失败：', error);
-					eda.sys_ToastMessage.showMessage(`文件检出失败: ${error.message}`, 0);
+					console.error('[真实 API] 检入失败:', error);
+					eda.sys_ToastMessage.showMessage(t('Checkin failed: ${1}', error.message), 0);
+					throw error;
 				}
 			}
 
 			/**
-			 * 查看文件（只读预览）
-			 * @param {string} fileNumber - 文件编号
+			 * 获取已检出的项目数据（模拟实现）
 			 */
-			async function viewFile(fileNumber) {
-				// 查找目标文件
-				const fileIndex = fileData.findIndex((file) => file.number === fileNumber);
-				if (fileIndex === -1) {
-					eda.sys_ToastMessage.showMessage('未找到指定文件', 0);
-					return;
+			async function fetchData() {
+				const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+
+				let getParams = '';
+				if (documentInfo.documentType === 3) {
+					eda.sys_ToastMessage.showMessage(t('Querying checked out PCB (Mock)'), 3);
+					getParams = 'pcb';
+				} else {
+					eda.sys_ToastMessage.showMessage(t('Querying checked out Schematic (Mock)'), 3);
+					getParams = 'orcad';
 				}
 
-				const fileName = fileData[fileIndex].name;
-				const version = fileData[fileIndex].version;
-				const modeText = useRealApi ? '真实 API' : 'Mock';
+				const mockData = {
+					success: true,
+					data: [
+						{
+							id: 'MOCK001',
+							pn: 'MOCK_PROJECT_001',
+							name: '模拟项目1',
+							type: getParams,
+							status: '已检出',
+							checkoutTime: new Date().toISOString(),
+						},
+						{
+							id: 'MOCK002',
+							pn: 'MOCK_PROJECT_002',
+							name: '模拟项目2',
+							type: getParams,
+							status: '已检出',
+							checkoutTime: new Date().toISOString(),
+						},
+					],
+				};
 
-				try {
-					eda.sys_ToastMessage.showMessage(`正在加载文件 (${modeText})...`, 2);
-
-					let eproFile;
-
-					if (useRealApi) {
-						// 真实 API: 下载文件（只读模式）
-						const apiUrl = getApiUrl();
-						const token = getAccessToken();
-
-						eda.sys_ToastMessage.showMessage('正在下载工程文件...', 2);
-						const downloadResponse = await fetch(`${apiUrl}/api/projects/${fileNumber}/download?mode=view`, {
-							method: 'GET',
-							headers: {
-								'Authorization': `Bearer ${token}`,
-							},
-						});
-
-						if (!downloadResponse.ok) {
-							throw new Error(`下载失败: HTTP ${downloadResponse.status}`);
-						}
-
-						const blob = await downloadResponse.blob();
-						eproFile = new File([blob], `${fileNumber}.epro`, { type: 'application/octet-stream' });
-						console.log('[真实 API] 工程文件下载成功 (只读):', eproFile);
-					} else {
-						// Mock 模式: 使用本地测试文件
-						eproFile = await eda.sys_FileSystem.getExtensionFile('iframe/test.epro');
-					}
-
-					// 获取当前团队信息
-					const teamInfo = await eda.dmt_Team.getCurrentTeamInfo();
-					console.log('当前团队信息：', teamInfo);
-
-					// 构建项目名称
-					const projectName = `${fileNumber}_${fileName}_${timestamp}`;
-
-					// 构建saveTo参数
-					const saveTo = {
-						operation: 'New Project',
-						newProjectOwnerTeamUuid: teamInfo.uuid,
-						newProjectOwnerFolderUuid: undefined,
-						newProjectFriendlyName: projectName,
-						newProjectDescription: `只读预览: ${fileName} (${version})`,
-						newProjectCollaborationMode: 1,
-					};
-
-					// 导入项目文件到EDA
-					const importedProject = await eda.sys_FileManager.importProjectByProjectFile(
-						eproFile,
-						'JLCEDA Pro',
-						{ importOption: 'ImportDocument' },
-						saveTo,
-					);
-
-					eda.sys_ToastMessage.showMessage(`文件 ${fileName} (${version}) 导入成功 (${modeText})`, 3);
-
-					// 输出导入信息
-					console.log(`[${modeText}] 文件导入信息：`, {
-						fileNumber: fileNumber,
-						fileName: fileName,
-						version: version,
-						projectName: projectName,
-						teamUuid: teamInfo.uuid,
-						teamName: teamInfo.name,
-						importedProject: importedProject,
-						status: '导入成功',
-					});
-				} catch (error) {
-					console.error('文件导入失败：', error);
-					eda.sys_ToastMessage.showMessage(`文件导入失败: ${error.message}`, 0);
-				}
+				console.log('MOCK 获取的数据：', mockData);
+				fileData = mockData.data;
+				eda.sys_ToastMessage.showMessage(t('Interface data fetched successfully (Mock)'), 3);
 			}
 
-			// 页面初始化已在window.onload中完成，无需重复调用
-			// fetchData();
+			/**
+			 * 自动触发检入操作（仅对PCB文档）
+			 */
+			async function autoClick() {
+				const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+				if (documentInfo.documentType === 3) {
+					await handleConfirm();
+				}
+			}
+			/**
+			 * 处理确认检入操作
+			 */
+			async function handleConfirm() {
+				const confirmBtn = document.querySelector('.confirm-btn');
+				confirmBtn.disabled = true;
+				confirmBtn.textContent = t('Processing...');
+
+				const modeText = useRealApi ? t('Real API') : 'Mock';
+
+				try {
+					const isChecked = document.getElementById('bomCheckbox').checked;
+					const deleteAfterCheckin = document.getElementById('deleteProjectCheckbox').checked;
+
+					const projectInfo = await eda.dmt_Project.getCurrentProjectInfo();
+					const documentInfo = await eda.dmt_SelectControl.getCurrentDocumentInfo();
+					const projectName = projectInfo.friendlyName;
+
+					// 提取工程���（去掉时间戳后缀）
+					const extractedName = projectName.replace(/_(\d{14})$/, '') || projectName;
+					eda.sys_ToastMessage.showMessage(t('Checking in current project (${1}): ${2}', modeText, extractedName), 3);
+
+					let titleBlockPlatform = '';
+					let titleBlockDesignVersion = '';
+					let bomData = null;
+
+					// 根据文档类型处理不同的文件
+					if (documentInfo.documentType === 3) {
+						// PCB 文档类型
+						eda.sys_ToastMessage.showMessage(t('Checking in PCB project (${1})', modeText), 3);
+					} else {
+						// 原理图文档类型
+						const titleBlockData = (await eda.dmt_Schematic.getCurrentSchematicInfo()).page[0].titleBlockData;
+						if (titleBlockData['Platform']) {
+							titleBlockPlatform = titleBlockData['Platform'].value;
+						}
+						if (titleBlockData['Design Version']) {
+							titleBlockDesignVersion = titleBlockData['Design Version'].value;
+						}
+
+						// 获取BOM文件（如果选中）
+						if (isChecked === true) {
+							// 使用默认参数获取BOM文件
+							const BOMFile = await eda.sch_ManufactureData.getBomFile(extractedName);
+							bomData = await BOMFile.text();
+							eda.sys_ToastMessage.showMessage(t('Obtained SCH BOM file'), 3);
+						}
+					}
+
+					// 构造简单的检入参数
+					const checkinParams = {
+						projectName: extractedName,
+						toolType: documentInfo.documentType === 3 ? 'layout' : 'schematic',
+						generateBOM: isChecked,
+						bomData: bomData,
+						metadata: {
+							version: titleBlockDesignVersion || 'V1.0',
+							platform: titleBlockPlatform || 'Generic Platform',
+						},
+						timestamp: new Date().toISOString(),
+					};
+
+					// 执行简单的模拟检入
+					await checkinData({ params: checkinParams });
+
+					// 检入成功后，从storage中的检出数据中移除该项目
+					try {
+						const checkoutDataStr = eda.sys_Storage.getExtensionUserConfig('CHECKOUT_DATA');
+						if (checkoutDataStr) {
+							let checkoutData = JSON.parse(checkoutDataStr);
+							// 从检出列表中移除已检入的项目
+							checkoutData = checkoutData.filter((item) => item.name !== extractedName && item.number !== extractedName);
+							eda.sys_Storage.setExtensionUserConfig('CHECKOUT_DATA', JSON.stringify(checkoutData));
+						}
+					} catch (error) {
+						console.error('更新检出数据失败：', error);
+					}
+
+					// 检入后删除工程（如果选中）
+					if (deleteAfterCheckin) {
+						try {
+							const project = await eda.dmt_Project.getCurrentProjectInfo();
+							eda.sys_ToastMessage.showMessage(t('Deleting project (${1})...', modeText), 2);
+							setTimeout(() => {
+								eda.sys_ToastMessage.showMessage(t('Project deleted successfully (${1})', modeText), 3);
+							}, 1000);
+						} catch (error) {
+							eda.sys_ToastMessage.showMessage(t('Project deletion failed (${1})', modeText), 0);
+						}
+					}
+					eda.sys_IFrame.closeIFrame('upload');
+				} catch (error) {
+					console.error('处理过程中发生错误:', error);
+					eda.sys_ToastMessage.showMessage(t('An error occurred during processing, please try again'), 0);
+					confirmBtn.disabled = false;
+					confirmBtn.textContent = t('Confirm');
+				}
+			}
 		</script>
 	</body>
 </html>
